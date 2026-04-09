@@ -1,5 +1,9 @@
-import { Bell } from 'lucide-react'
+'use client'
+
+import { usePathname } from 'next/navigation'
+import { Bell, Moon, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useTheme } from '@/components/ThemeProvider'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -8,25 +12,51 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { MobileSidebarTrigger } from './Sidebar'
 
-interface HeaderProps {
-  title: string
+const pageTitles: Record<string, string> = {
+  '/dashboard': 'Dashboard',
+  '/leads': 'Leads',
+  '/inbox': 'Inbox',
+  '/calendar': 'Calendário',
+  '/settings': 'Configurações',
+  '/users': 'Usuários',
 }
 
-export function Header({ title }: HeaderProps) {
+function getTitle(pathname: string): string {
+  for (const [prefix, title] of Object.entries(pageTitles)) {
+    if (pathname === prefix || pathname.startsWith(prefix + '/')) return title
+  }
+  return 'Lexia AI'
+}
+
+export function Header() {
+  const pathname = usePathname()
+  const title = getTitle(pathname)
+  const { theme, toggle } = useTheme()
+
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-white px-6">
-      {/* Page title */}
-      <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-background px-4 sm:px-6">
+      <div className="flex items-center gap-3">
+        {/* Hamburger — só mobile */}
+        <MobileSidebarTrigger />
+        <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+      </div>
 
       {/* Right side actions */}
       <div className="flex items-center gap-3">
-        {/* Notification bell */}
-        <Button variant="ghost" size="icon" aria-label="Notificações">
-          <Bell className="h-5 w-5 text-gray-500" />
+        <Button variant="ghost" size="icon" aria-label="Alternar tema" onClick={toggle}>
+          {theme === 'dark' ? (
+            <Sun className="h-5 w-5 text-muted-foreground" />
+          ) : (
+            <Moon className="h-5 w-5 text-muted-foreground" />
+          )}
         </Button>
 
-        {/* Avatar with dropdown */}
+        <Button variant="ghost" size="icon" aria-label="Notificações">
+          <Bell className="h-5 w-5 text-muted-foreground" />
+        </Button>
+
         <DropdownMenu>
           <DropdownMenuTrigger
             className="flex h-8 w-8 items-center justify-center rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"

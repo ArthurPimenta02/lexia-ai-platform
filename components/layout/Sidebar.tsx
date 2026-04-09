@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { LayoutDashboard, Users, Inbox, Calendar, Settings, UserCog, Menu } from 'lucide-react'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
 import { NavItem } from './NavItem'
 
 const navItems = [
@@ -38,30 +39,31 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   )
 }
 
-export function Sidebar() {
-  const [mobileOpen, setMobileOpen] = useState(false)
+// Exportado separadamente para o Header montar no lado esquerdo em mobile
+export function MobileSidebarTrigger() {
+  const [open, setOpen] = useState(false)
 
   return (
-    <>
-      {/* Desktop sidebar */}
-      <aside className="hidden w-60 shrink-0 border-r border-border bg-white sm:flex sm:flex-col">
-        <SidebarContent />
-      </aside>
+    <div className="sm:hidden">
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger
+          render={<Button variant="ghost" size="icon" aria-label="Abrir menu" />}
+        >
+          <Menu className="h-5 w-5" />
+        </SheetTrigger>
+        <SheetContent side="left" className="w-60 p-0">
+          <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
+          <SidebarContent onNavClick={() => setOpen(false)} />
+        </SheetContent>
+      </Sheet>
+    </div>
+  )
+}
 
-      {/* Mobile sidebar — Sheet */}
-      <div className="flex items-center sm:hidden">
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetTrigger
-            className="flex h-9 w-9 items-center justify-center rounded-md hover:bg-gray-100"
-            aria-label="Abrir menu"
-          >
-            <Menu className="h-5 w-5" />
-          </SheetTrigger>
-          <SheetContent side="left" className="w-60 p-0" showCloseButton={false}>
-            <SidebarContent onNavClick={() => setMobileOpen(false)} />
-          </SheetContent>
-        </Sheet>
-      </div>
-    </>
+export function Sidebar() {
+  return (
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-background sm:flex">
+      <SidebarContent />
+    </aside>
   )
 }
