@@ -46,7 +46,9 @@ export function Header() {
       {/* Right side actions */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" aria-label="Alternar tema" onClick={toggle}>
-          {theme === 'dark' ? (
+          {theme === null ? (
+            <span className="h-5 w-5" />
+          ) : theme === 'dark' ? (
             <Sun className="h-5 w-5 text-muted-foreground" />
           ) : (
             <Moon className="h-5 w-5 text-muted-foreground" />

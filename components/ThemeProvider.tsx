@@ -5,13 +5,13 @@ import { createContext, useContext, useEffect, useState } from 'react'
 type Theme = 'light' | 'dark'
 
 const ThemeContext = createContext<{
-  theme: Theme
+  theme: Theme | null
   toggle: () => void
-}>({ theme: 'dark', toggle: () => {} })
+}>({ theme: null, toggle: () => {} })
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Inicia como 'dark' — o script inline já aplicou a classe correta antes da hidratação
-  const [theme, setTheme] = useState<Theme>('dark')
+  // null no SSR — evita mismatch com o valor real do localStorage
+  const [theme, setTheme] = useState<Theme | null>(null)
 
   useEffect(() => {
     // Lê o que o script inline já resolveu
@@ -20,7 +20,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   function toggle() {
-    const next: Theme = theme === 'dark' ? 'light' : 'dark'
+    // Se ainda não hidratou, lê direto do DOM
+    const current = theme ?? (document.documentElement.classList.contains('dark') ? 'dark' : 'light')
+    const next: Theme = current === 'dark' ? 'light' : 'dark'
     setTheme(next)
     localStorage.setItem('lexia-theme', next)
     document.documentElement.classList.toggle('dark', next === 'dark')
@@ -36,6 +38,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme() {
   return useContext(ThemeContext)
 }
+
+// Tipo exportado para uso externo
+export type { Theme }
 
 // Script inline que roda antes da hidratação — evita flash de tema errado
 export const themeScript = `

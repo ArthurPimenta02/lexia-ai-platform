@@ -115,28 +115,32 @@ feat(ui): design system, layout shell — sidebar, header, nav, tokens
 #### Entregas
 
 **Layout de auth**
-- [ ] Criar `app/(auth)/layout.tsx` — layout centralizado, sem sidebar
-- [ ] Criar `components/layout/AuthCard.tsx` — card com logo Lexia, título, subtítulo
+- [x] Criar `app/(auth)/layout.tsx` — layout centralizado, sem sidebar
+- [x] Criar `components/layout/AuthCard.tsx` — card com logo Lexia, título, subtítulo
 
 **Tela de Login**
-- [ ] Criar `app/(auth)/login/page.tsx`
-- [ ] Campos: Email, Senha
-- [ ] Botão "Entrar" (estado loading simulado)
-- [ ] Link "Esqueci minha senha"
-- [ ] Validação visual de campos obrigatórios (HTML5 + estilos de erro)
-- [ ] Responsivo em mobile
+- [x] Criar `app/(auth)/login/page.tsx`
+- [x] Campos: Email, Senha
+- [x] Botão "Entrar" (estado loading simulado)
+- [x] Link "Esqueci minha senha"
+- [x] Validação visual de campos obrigatórios (HTML5 + estilos de erro)
+- [x] Responsivo em mobile
 
 **Tela de Recuperação de Senha**
-- [ ] Criar `app/(auth)/forgot-password/page.tsx`
-- [ ] Campo: Email
-- [ ] Botão "Enviar instruções"
-- [ ] Estado de sucesso: "Verifique seu e-mail"
-- [ ] Link "Voltar para o login"
+- [x] Criar `app/(auth)/forgot-password/page.tsx`
+- [x] Campo: Email
+- [x] Botão "Enviar instruções"
+- [x] Estado de sucesso: "Verifique seu e-mail"
+- [x] Link "Voltar para o login"
+
+**Extras entregues (além do plano)**
+- [x] Criar `app/(auth)/signup/page.tsx` — cadastro de nova conta
+- [x] Criar `app/(onboarding)/onboarding/page.tsx` — fluxo de onboarding do workspace
 
 **Verificação**
-- [ ] Ambas as telas renderizam sem erros
-- [ ] Visual alinhado com design tokens (cores, fontes, espaçamentos)
-- [ ] Build passa limpo
+- [x] Ambas as telas renderizam sem erros
+- [x] Visual alinhado com design tokens (cores, fontes, espaçamentos)
+- [x] Build passa limpo
 
 **Commit final:**
 ```
@@ -153,31 +157,31 @@ feat(ui): auth pages — login, forgot-password, auth layout
 #### Entregas
 
 **Dados mock**
-- [ ] Criar `lib/mock/dashboard.ts` com dados de métricas, atividades e funil
+- [x] Criar `lib/mock/dashboard.ts` com dados de métricas, atividades e funil
 
 **Cards de métricas**
-- [ ] Criar `components/shared/MetricCard.tsx` — ícone, label, número, variação (↑↓)
-- [ ] Métricas: Novos Leads (24h), Total de Leads, Taxa de Conversão, Atendimentos Hoje
+- [x] Criar `components/shared/MetricCard.tsx` — ícone, label, número, variação (↑↓)
+- [x] Métricas: Novos Leads (24h), Total de Leads, Taxa de Conversão, Atendimentos Hoje
 
 **Funil visual**
-- [ ] Criar `components/shared/FunnelChart.tsx` — barras horizontais por estágio com contagem e cor
-- [ ] Usar as cores de status do PRD: Novo `#3B82F6`, Qualificado `#8B5CF6`, etc.
+- [x] Criar `components/shared/FunnelChart.tsx` — barras horizontais por estágio com contagem e cor
+- [x] Usar as cores de status do PRD: Novo `#3B82F6`, Qualificado `#8B5CF6`, etc.
 
 **Feed de atividades**
-- [ ] Criar `components/shared/ActivityFeed.tsx` — lista de eventos recentes (lead criado, mensagem recebida, handoff)
-- [ ] Timestamp relativo ("há 5 min", "há 2h")
+- [x] Criar `components/shared/ActivityFeed.tsx` — lista de eventos recentes (lead criado, mensagem recebida, handoff)
+- [x] Timestamp relativo ("há 5 min", "há 2h")
 
 **Notificações pendentes**
 - [ ] Criar `components/shared/NotificationBell.tsx` no header com badge de contagem
 
 **Página**
-- [ ] Criar `app/(dashboard)/dashboard/page.tsx` compondo os componentes acima
-- [ ] Grid responsivo: 2 colunas em desktop, 1 em mobile
+- [x] Criar `app/(dashboard)/dashboard/page.tsx` compondo os componentes acima
+- [x] Grid responsivo: 2 colunas em desktop, 1 em mobile
 
 **Verificação**
-- [ ] Dashboard renderiza com dados mock sem erros
-- [ ] Grid responsivo funciona em todos os breakpoints
-- [ ] Build passa limpo
+- [x] Dashboard renderiza com dados mock sem erros
+- [x] Grid responsivo funciona em todos os breakpoints
+- [x] Build passa limpo
 
 **Commit final:**
 ```
