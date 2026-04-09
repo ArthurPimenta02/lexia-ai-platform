@@ -10,7 +10,9 @@
       "Bash(mv lexia-ai/public .)",
       "Bash(mv lexia-ai/node_modules .)",
       "Bash(npm install:*)",
-      "Bash(npx shadcn@latest init --defaults)"
+      "Bash(npx shadcn@latest init --defaults)",
+      "Bash(npx shadcn@latest add card input label badge avatar dialog dropdown-menu separator skeleton tooltip sheet --yes)",
+      "Bash(npm run:*)"
     ]
   },
   "enabledPlugins": {
