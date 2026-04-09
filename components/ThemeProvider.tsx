@@ -10,13 +10,13 @@ const ThemeContext = createContext<{
 }>({ theme: 'dark', toggle: () => {} })
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  // Inicia como 'dark' — o script inline já aplicou a classe correta antes da hidratação
   const [theme, setTheme] = useState<Theme>('dark')
 
   useEffect(() => {
-    const stored = localStorage.getItem('lexia-theme') as Theme | null
-    const resolved = stored ?? 'dark'
-    setTheme(resolved)
-    document.documentElement.classList.toggle('dark', resolved === 'dark')
+    // Lê o que o script inline já resolveu
+    const isDark = document.documentElement.classList.contains('dark')
+    setTheme(isDark ? 'dark' : 'light')
   }, [])
 
   function toggle() {
@@ -36,3 +36,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme() {
   return useContext(ThemeContext)
 }
+
+// Script inline que roda antes da hidratação — evita flash de tema errado
+export const themeScript = `
+(function(){
+  try {
+    var t = localStorage.getItem('lexia-theme');
+    var dark = t ? t === 'dark' : true;
+    document.documentElement.classList.toggle('dark', dark);
+  } catch(e) {}
+})();
+`
