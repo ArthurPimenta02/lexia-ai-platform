@@ -41,19 +41,19 @@
 
 #### Entregas
 
-- [ ] Criar repositório no GitHub
-- [ ] `npx create-next-app@latest` com TypeScript, Tailwind CSS, App Router, src/ off
-- [ ] Configurar TypeScript strict (`"strict": true` no tsconfig)
-- [ ] Instalar e configurar shadcn/ui (`npx shadcn@latest init`)
-- [ ] Instalar Lucide React
-- [ ] Configurar `tailwind.config.ts` com design tokens (cores, fontes, border-radius)
-- [ ] Adicionar fonte Inter via `next/font/google`
-- [ ] Criar estrutura de pastas conforme CLAUDE.md (`app/`, `components/`, `lib/`, `types/`, `docs/`, `supabase/`)
-- [ ] Criar `lib/utils.ts` com função `cn()` (clsx + tailwind-merge)
-- [ ] Configurar ESLint + Prettier
-- [ ] Criar `.env.local` e `.env.example` com variáveis placeholder
+- [x] Criar repositório no GitHub
+- [x] `npx create-next-app@latest` com TypeScript, Tailwind CSS, App Router, src/ off
+- [x] Configurar TypeScript strict (`"strict": true` no tsconfig)
+- [x] Instalar e configurar shadcn/ui (`npx shadcn@latest init`)
+- [x] Instalar Lucide React
+- [x] Configurar `tailwind.config.ts` com design tokens (cores, fontes, border-radius)
+- [x] Adicionar fonte Inter via `next/font/google`
+- [x] Criar estrutura de pastas conforme CLAUDE.md (`app/`, `components/`, `lib/`, `types/`, `docs/`, `supabase/`)
+- [x] Criar `lib/utils.ts` com função `cn()` (clsx + tailwind-merge)
+- [x] Configurar ESLint + Prettier
+- [x] Criar `.env.local` e `.env.example` com variáveis placeholder
 - [ ] Linkar projeto ao Vercel e fazer primeiro deploy (página em branco OK)
-- [ ] Confirmar que build passa sem erros (`next build`)
+- [x] Confirmar que build passa sem erros (`next build`)
 
 **Commit final:**
 ```
@@ -77,28 +77,28 @@ feat: project bootstrap — Next.js 14, TypeScript strict, Tailwind, shadcn/ui, 
 #### Entregas
 
 **Design tokens**
-- [ ] Definir CSS custom properties em `app/globals.css` (cores primárias, semânticas, bordas)
-- [ ] Mapear cores no `tailwind.config.ts` (`primary`, `success`, `warning`, `error`, `neutral`)
-- [ ] Configurar tipografia (Inter como font-sans padrão)
+- [x] Definir CSS custom properties em `app/globals.css` (cores primárias, semânticas, bordas)
+- [x] Mapear cores no `tailwind.config.ts` (`primary`, `success`, `warning`, `error`, `neutral`)
+- [x] Configurar tipografia (Inter como font-sans padrão)
 
 **Componentes primitivos (shadcn/ui)**
-- [ ] Instalar: `button`, `card`, `input`, `label`, `badge`, `avatar`, `dialog`, `dropdown-menu`, `separator`, `skeleton`, `tooltip`, `sheet`
-- [ ] Criar `components/ui/` — deixar shadcn gerenciar
+- [x] Instalar: `button`, `card`, `input`, `label`, `badge`, `avatar`, `dialog`, `dropdown-menu`, `separator`, `skeleton`, `tooltip`, `sheet`
+- [x] Criar `components/ui/` — deixar shadcn gerenciar
 
 **Layout do dashboard**
-- [ ] Criar `app/(dashboard)/layout.tsx` com estrutura sidebar + main content
-- [ ] Criar `components/layout/Sidebar.tsx` — itens de navegação, logo, item ativo destacado, collapse em mobile
-- [ ] Criar `components/layout/Header.tsx` — título da página, sino de notificações, avatar com dropdown
-- [ ] Criar `components/layout/NavItem.tsx` — link com ícone + label + estado ativo
-- [ ] Sidebar colapsa em mobile (< 640px) usando `Sheet` do shadcn
+- [x] Criar `app/(dashboard)/layout.tsx` com estrutura sidebar + main content
+- [x] Criar `components/layout/Sidebar.tsx` — itens de navegação, logo, item ativo destacado, collapse em mobile
+- [x] Criar `components/layout/Header.tsx` — título da página, sino de notificações, avatar com dropdown
+- [x] Criar `components/layout/NavItem.tsx` — link com ícone + label + estado ativo
+- [x] Sidebar colapsa em mobile (< 640px) usando `Sheet` do shadcn
 
 **Página placeholder**
-- [ ] Criar `app/(dashboard)/dashboard/page.tsx` com "Dashboard — em construção" para validar o layout
+- [x] Criar `app/(dashboard)/dashboard/page.tsx` com "Dashboard — em construção" para validar o layout
 
 **Verificação**
-- [ ] Layout renderiza corretamente em mobile, tablet e desktop
-- [ ] Navegação entre rotas funciona sem erro de hidratação
-- [ ] Build passa limpo
+- [x] Layout renderiza corretamente em mobile, tablet e desktop
+- [x] Navegação entre rotas funciona sem erro de hidratação
+- [x] Build passa limpo
 
 **Commit final:**
 ```
