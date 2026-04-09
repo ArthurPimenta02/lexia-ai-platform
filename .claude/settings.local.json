@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx claude-code-templates@latest:*)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(npx create-next-app@latest lexia-ai --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(cp lexia-ai/.gitignore .)",
+      "Bash(shopt -s dotglob)",
+      "Bash(mv lexia-ai/app .)",
+      "Bash(mv lexia-ai/public .)",
+      "Bash(mv lexia-ai/node_modules .)",
+      "Bash(npm install:*)",
+      "Bash(npx shadcn@latest init --defaults)"
+    ]
+  },
+  "enabledPlugins": {
+    "stripe@claude-plugins-official": true
+  }
+}
