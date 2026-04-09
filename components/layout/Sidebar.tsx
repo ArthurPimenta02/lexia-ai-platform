@@ -1,10 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { LayoutDashboard, Users, Inbox, Calendar, Settings, UserCog, Menu } from 'lucide-react'
+import { LayoutDashboard, Users, Inbox, Calendar, Settings, UserCog, Menu, ChevronsUpDown, Check, Plus, Building2 } from 'lucide-react'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { NavItem } from './NavItem'
+import { cn } from '@/lib/utils'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -14,6 +24,70 @@ const navItems = [
   { href: '/settings', label: 'Configurações', icon: Settings },
   { href: '/users', label: 'Usuários', icon: UserCog },
 ]
+
+// Mock — substituído por dados reais em M8/M9
+const mockWorkspaces = [
+  { id: '1', name: 'Silva & Associados' },
+  { id: '2', name: 'Ferreira Advocacia' },
+]
+
+function WorkspaceSwitcher() {
+  const [activeId, setActiveId] = useState(mockWorkspaces[0].id)
+  const active = mockWorkspaces.find((w) => w.id === activeId) ?? mockWorkspaces[0]
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="flex w-full items-center gap-2.5 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none ring-offset-background transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+        {/* Ícone do workspace */}
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-brand text-white">
+          <Building2 className="h-3.5 w-3.5" />
+        </div>
+
+        {/* Nome — truncado se longo */}
+        <span className="flex-1 truncate text-left font-medium text-foreground">
+          {active.name}
+        </span>
+
+        <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent side="top" sideOffset={8} className="w-56">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
+
+          {mockWorkspaces.map((ws) => (
+            <DropdownMenuItem
+              key={ws.id}
+              onClick={() => setActiveId(ws.id)}
+              className="gap-2"
+            >
+              <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-brand/10 text-brand">
+                <Building2 className="h-3 w-3" />
+              </div>
+              <span className="flex-1 truncate">{ws.name}</span>
+              {ws.id === activeId && <Check className="h-3.5 w-3.5 text-brand" />}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          className={cn('gap-2 text-muted-foreground')}
+          onClick={() => {
+            // Navega para o onboarding para criar novo workspace — fake por enquanto
+            window.location.href = '/onboarding'
+          }}
+        >
+          <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-dashed border-border">
+            <Plus className="h-3 w-3" />
+          </div>
+          <span>Criar workspace</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   return (
@@ -35,6 +109,11 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
           />
         ))}
       </nav>
+
+      {/* Workspace switcher */}
+      <div className="border-t border-border p-3">
+        <WorkspaceSwitcher />
+      </div>
     </div>
   )
 }
