@@ -126,10 +126,12 @@ export function MobileSidebarTrigger() {
     <div className="sm:hidden">
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger
-          render={<Button variant="ghost" size="icon" aria-label="Abrir menu" />}
-        >
-          <Menu className="h-5 w-5" />
-        </SheetTrigger>
+          render={
+            <Button variant="ghost" size="icon" aria-label="Abrir menu">
+              <Menu className="h-5 w-5" />
+            </Button>
+          }
+        />
         <SheetContent side="left" className="w-60 p-0">
           <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
           <SidebarContent onNavClick={() => setOpen(false)} />

@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} ${firaCode.variable} h-full antialiased`}>
+    <html lang="pt-BR" className={`${inter.variable} ${firaCode.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         {/* Aplica tema antes da hidratação — evita flash */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
