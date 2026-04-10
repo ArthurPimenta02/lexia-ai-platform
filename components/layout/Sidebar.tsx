@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { LayoutDashboard, Users, Inbox, Calendar, Settings, UserCog, Menu, ChevronsUpDown, Check, Plus, Building2 } from 'lucide-react'
+import { LayoutDashboard, Users, Inbox, Calendar, Settings, UserCog, Menu, ChevronsUpDown, Check, Plus, Building2, Kanban } from 'lucide-react'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils'
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/leads', label: 'Leads', icon: Users },
+  { href: '/kanban', label: 'Pipeline', icon: Kanban },
   { href: '/inbox', label: 'Inbox', icon: Inbox },
   { href: '/calendar', label: 'Calendário', icon: Calendar },
   { href: '/settings', label: 'Configurações', icon: Settings },

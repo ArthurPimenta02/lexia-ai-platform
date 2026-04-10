@@ -14,7 +14,8 @@
 | M1 | Design System & Layout Shell | `ui/design-system` | Interface |
 | M2 | Auth Pages (estático) | `ui/auth` | Interface |
 | M3 | Dashboard UI | `ui/dashboard` | Interface |
-| M4 | Kanban & Leads UI | `ui/kanban` | Interface |
+| M4 | Leads UI (Tabela) ✅ | `ui/leads-table` | Interface |
+| M4b | Kanban UI | `ui/kanban` | Interface |
 | M5 | Inbox UI | `ui/inbox` | Interface |
 | M6 | Calendar UI | `ui/calendar` | Interface |
 | M7 | Settings & Users UI | `ui/settings` | Interface |
@@ -190,50 +191,65 @@ feat(ui): dashboard — metric cards, funnel chart, activity feed, notifications
 
 ---
 
-### M4 · Kanban & Leads UI
+### M4 · Leads UI (Tabela)
 
-**Branch:** `ui/kanban`
-**Objetivo:** Board Kanban completo com drag-and-drop, cartões de lead, modal de detalhes e filtros — tudo com dados mock.
+**Branch:** `ui/leads-table` ✅ merged → `master`
+**Objetivo:** Gestão completa de leads com tabela, filtros, busca em tempo real, CRUD via dialogs e página de detalhe com timeline de atividades — tudo com dados mock.
+
+> **Nota:** Kanban com drag-and-drop foi adiado para M4b (ver abaixo). O usuário priorizou a visão de tabela por ser mais útil no curto prazo.
 
 #### Entregas
 
 **Dados mock**
-- [ ] Criar `lib/mock/leads.ts` com leads de exemplo em cada estágio
-- [ ] Criar `types/lead.ts` com interfaces: `Lead`, `LeadStage`, `LeadOrigin`, `LeadUrgency`
+- [x] Criar `lib/mock/leads.ts` — 15 leads brasileiros (3 Novo, 2 Qualificado, 3 Proposta, 2 Contrato, 3 Cliente, 2 Perdido), STATUS_COLORS, MOCK_LEAD_ACTIVITIES (3–5 eventos por lead)
+- [x] Criar `types/lead.ts` — interfaces `Lead`, `LeadActivity`, union `LeadStatus`
 
-**Board Kanban**
-- [ ] Criar `components/kanban/KanbanBoard.tsx` — container das colunas com scroll horizontal
-- [ ] Criar `components/kanban/KanbanColumn.tsx` — cabeçalho com nome do estágio, cor e contagem; lista de cards
-- [ ] Criar `components/kanban/KanbanCard.tsx` — nome do lead, tipo de caso, origem (badge), urgência (badge), responsável (avatar), data de criação
-- [ ] Implementar drag-and-drop entre colunas com `@hello-pangea/dnd` (fork do `react-beautiful-dnd`)
-- [ ] Estado visual durante drag: card com opacity reduzida, coluna de destino destacada
+**Componentes**
+- [x] Criar `components/leads/StatusBadge.tsx` — badge com dot colorido via inline style
+- [x] Criar `components/leads/LeadFormDialog.tsx` — dialog dual-mode (criar/editar), validação com `aria-invalid`, reset ao fechar
+- [x] Criar `components/leads/DeleteLeadDialog.tsx` — confirmação de exclusão
+- [x] Criar `components/leads/LeadsTable.tsx` — tabela semântica, DropdownMenu de ações, link para detalhe, empty state, colunas responsivas
+- [x] Criar `components/leads/LeadsClient.tsx` — state owner (leads, search, statusFilter, dialogs), toolbar com busca + filtro + "Novo Lead"
 
-**Filtros e busca**
-- [ ] Criar `components/kanban/KanbanFilters.tsx` — busca por nome, filtro por responsável, filtro por origem
-- [ ] Botão "Novo Lead" abre modal de criação
+**Página de lista**
+- [x] Modificar `app/(dashboard)/leads/page.tsx` — thin shell montando `<LeadsClient />`
 
-**Modal de detalhes do Lead**
-- [ ] Criar `components/kanban/LeadDetailModal.tsx` com `Dialog` do shadcn
-- [ ] Seções: Dados pessoais (nome, CPF, email, telefone), Caso (tipo, urgência, notas), Responsável, Histórico de estágio, Ações (mover estágio, editar)
-- [ ] Abrir ao clicar em qualquer card
-
-**Modal de criação de Lead**
-- [ ] Criar `components/kanban/LeadCreateModal.tsx`
-- [ ] Campos: Nome, Email, Telefone, CPF, Tipo de caso, Urgência, Origem, Responsável, Notas
-
-**Página**
-- [ ] Criar `app/(dashboard)/leads/page.tsx`
+**Página de detalhe**
+- [x] Criar `components/leads/LeadDetailClient.tsx` — hero card, grid de contato/observações, timeline de atividades com ícones por tipo, dialog de edição inline
+- [x] Criar `app/(dashboard)/leads/[id]/page.tsx` — Server Component, `await params`, `notFound()` para IDs inválidos
 
 **Verificação**
-- [ ] Drag-and-drop funciona entre colunas sem erros
-- [ ] Modal abre e fecha corretamente
-- [ ] Filtro reduz os cards visivelmente
-- [ ] Build passa limpo
+- [x] Tabela com 15 leads sem erros de console
+- [x] Busca por nome/empresa em tempo real
+- [x] Filtro por status combinado com busca
+- [x] Criar lead: validação de campos obrigatórios (aria-invalid)
+- [x] Editar lead: dialog pré-preenchido, tabela atualiza
+- [x] Excluir lead: confirmation dialog, linha removida
+- [x] Navegação para `/leads/[id]` e página de detalhe completa
+- [x] Edição inline na página de detalhe
+- [x] `notFound()` para ID inválido
+- [x] Build limpo (`tsc --noEmit` + `next build` — 0 erros)
 
 **Commit final:**
 ```
-feat(ui): kanban board — drag-and-drop, lead cards, detail modal, create modal, filters
+feat(ui/leads): tabela de leads, filtros, CRUD e página de detalhe
 ```
+
+---
+
+### M4b · Kanban UI (pendente)
+
+**Branch:** `ui/kanban` *(não iniciado)*
+**Objetivo:** Visão alternativa em Kanban com drag-and-drop para os mesmos dados de leads.
+
+#### Entregas (planejadas)
+
+- [ ] Criar `components/kanban/KanbanBoard.tsx` — container de colunas com scroll horizontal
+- [ ] Criar `components/kanban/KanbanColumn.tsx` — cabeçalho com nome do estágio, cor e contagem
+- [ ] Criar `components/kanban/KanbanCard.tsx` — dados do lead no card
+- [ ] Implementar drag-and-drop com `@hello-pangea/dnd`
+- [ ] Toggle "Tabela / Kanban" na página de leads
+- [ ] Build limpo
 
 ---
 
