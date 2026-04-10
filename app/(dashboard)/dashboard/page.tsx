@@ -1,4 +1,4 @@
-import { Users, Inbox, Calendar, TrendingUp } from 'lucide-react'
+import { Users, BarChart2, Calendar, TrendingUp } from 'lucide-react'
 import { MetricCard } from '@/components/shared/MetricCard'
 import { FunnelChart } from '@/components/shared/FunnelChart'
 import { ActivityFeed } from '@/components/shared/ActivityFeed'
@@ -31,7 +31,7 @@ export default function DashboardPage() {
           value={`${mockMetrics.conversionRate}%`}
           delta={mockMetrics.conversionRateDelta}
           deltaLabel="vs mês anterior"
-          icon={Inbox}
+          icon={BarChart2}
           iconColor="text-success"
           iconBg="bg-emerald-50 dark:bg-emerald-950/30"
         />

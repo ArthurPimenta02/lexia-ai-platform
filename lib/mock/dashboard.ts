@@ -1,3 +1,72 @@
+export type NotificationType = 'lead_novo' | 'handoff' | 'prazo' | 'reuniao' | 'status'
+
+export interface MockNotification {
+  id: string
+  type: NotificationType
+  title: string
+  description: string
+  read: boolean
+  timestamp: string // ISO 8601 fixed string
+  leadId?: string
+}
+
+export const MOCK_NOTIFICATIONS: MockNotification[] = [
+  {
+    id: 'notif-001',
+    type: 'handoff',
+    title: 'Handoff solicitado',
+    description: 'Maria Silva pediu atendimento humano via WhatsApp',
+    read: false,
+    timestamp: '2026-04-10T09:05:00Z',
+    leadId: 'lead-001',
+  },
+  {
+    id: 'notif-002',
+    type: 'lead_novo',
+    title: 'Novo lead qualificado',
+    description: 'João Ferreira avançou para Qualificado',
+    read: false,
+    timestamp: '2026-04-10T08:42:00Z',
+    leadId: 'lead-004',
+  },
+  {
+    id: 'notif-003',
+    type: 'prazo',
+    title: 'Prazo se aproximando',
+    description: 'Resposta trabalhista — Bruno Ferreira — vence em 2 dias',
+    read: false,
+    timestamp: '2026-04-10T08:00:00Z',
+    leadId: 'lead-002',
+  },
+  {
+    id: 'notif-004',
+    type: 'reuniao',
+    title: 'Reunião confirmada',
+    description: 'Ana Costa confirmou reunião para hoje às 14h',
+    read: true,
+    timestamp: '2026-04-09T16:30:00Z',
+    leadId: 'lead-007',
+  },
+  {
+    id: 'notif-005',
+    type: 'status',
+    title: 'Lead avançou no pipeline',
+    description: 'Eliane Cardoso movida para Contrato',
+    read: true,
+    timestamp: '2026-04-09T14:15:00Z',
+    leadId: 'lead-005',
+  },
+  {
+    id: 'notif-006',
+    type: 'lead_novo',
+    title: 'Novo lead recebido',
+    description: 'Mariana Cunha entrou via WhatsApp',
+    read: true,
+    timestamp: '2026-04-09T10:00:00Z',
+    leadId: 'lead-013',
+  },
+]
+
 export const mockMetrics = {
   newLeads24h: 7,
   newLeads24hDelta: +3,

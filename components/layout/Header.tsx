@@ -1,8 +1,9 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { Bell, Moon, Sun } from 'lucide-react'
+import { Moon, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { NotificationBell } from './NotificationBell'
 import { useTheme } from '@/components/ThemeProvider'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
@@ -17,7 +18,9 @@ import { MobileSidebarTrigger } from './Sidebar'
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/leads': 'Leads',
-  '/inbox': 'Inbox',
+  '/kanban': 'Pipeline',
+  '/casos': 'Casos',
+  '/radar': 'Radar',
   '/calendar': 'Calendário',
   '/settings': 'Configurações',
   '/users': 'Usuários',
@@ -55,9 +58,7 @@ export function Header() {
           )}
         </Button>
 
-        <Button variant="ghost" size="icon" aria-label="Notificações">
-          <Bell className="h-5 w-5 text-muted-foreground" />
-        </Button>
+        <NotificationBell />
 
         <DropdownMenu>
           <DropdownMenuTrigger

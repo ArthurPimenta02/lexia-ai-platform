@@ -25,3 +25,19 @@ export interface LeadActivity {
   description: string
   timestamp: string // ISO 8601 fixed string
 }
+
+export type UrgencyLevel = 'Alta' | 'Média' | 'Baixa'
+
+export interface TriageIntakeCard {
+  id: string
+  title: string
+  content: string
+}
+
+export interface LeadTriage {
+  legalArea: string
+  demandSummary: string
+  urgency: UrgencyLevel
+  routingSuggestion: string
+  intakeCards: TriageIntakeCard[]
+}
