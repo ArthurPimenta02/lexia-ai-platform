@@ -3,6 +3,9 @@
 > **Estratégia:** Interface primeiro com dados mock → Backend real → Integração n8n → Deploy
 >
 > Cada milestone é uma branch isolada. O merge para `main` acontece só com o objetivo cumprido.
+>
+> **Posicionamento:** Lexia AI é uma plataforma operacional com IA para escritórios de advocacia — não um CRM genérico.
+> A jornada do produto é: **Leads → Pipeline → Casos → Radar → Calendário**.
 
 ---
 
@@ -10,24 +13,26 @@
 
 | # | Milestone | Branch | Fase |
 |---|---|---|---|
-| M0 | Project Setup | `setup/bootstrap` | Fundação |
-| M1 | Design System & Layout Shell | `ui/design-system` | Interface |
-| M2 | Auth Pages (estático) | `ui/auth` | Interface |
-| M3 | Dashboard UI | `ui/dashboard` | Interface |
+| M0 | Project Setup ✅ | `setup/bootstrap` | Fundação |
+| M1 | Design System & Layout Shell ✅ | `ui/design-system` | Interface |
+| M2 | Auth Pages (estático) ✅ | `ui/auth` | Interface |
+| M3 | Dashboard UI ✅ | `ui/dashboard` | Interface |
 | M4 | Leads UI (Tabela) ✅ | `ui/leads-table` | Interface |
-| M4b | Kanban UI | `ui/kanban` | Interface |
-| M5 | Inbox UI | `ui/inbox` | Interface |
-| M6 | Calendar UI | `ui/calendar` | Interface |
-| M7 | Settings & Users UI | `ui/settings` | Interface |
-| M8 | Database & Supabase Setup | `backend/database` | Backend |
-| M9 | Auth Backend | `backend/auth` | Backend |
-| M10 | Leads & Kanban Backend | `backend/leads` | Backend |
-| M11 | Inbox Backend + Realtime | `backend/inbox` | Backend |
-| M12 | Dashboard Backend | `backend/dashboard` | Backend |
-| M13 | Calendar Backend | `backend/calendar` | Backend |
-| M14 | Settings & Users Backend | `backend/settings` | Backend |
-| M15 | Integração n8n | `backend/n8n` | Integração |
-| M16 | Deploy & Observabilidade | `deploy/production` | Deploy |
+| M4b | Kanban UI ✅ | `ui/kanban` | Interface |
+| M5 | Casos UI ← **aqui** | `ui/casos` | Interface |
+| M6 | Radar UI | `ui/radar` | Interface |
+| M7 | Calendar UI | `ui/calendar` | Interface |
+| M8 | Settings & Users UI | `ui/settings` | Interface |
+| M9 | Database & Supabase Setup | `backend/database` | Backend |
+| M10 | Auth Backend | `backend/auth` | Backend |
+| M11 | Leads & Kanban Backend | `backend/leads` | Backend |
+| M12 | Casos Backend | `backend/casos` | Backend |
+| M13 | Radar Backend | `backend/radar` | Backend |
+| M14 | Dashboard Backend | `backend/dashboard` | Backend |
+| M15 | Calendar Backend | `backend/calendar` | Backend |
+| M16 | Settings & Users Backend | `backend/settings` | Backend |
+| M17 | Integração n8n | `backend/n8n` | Integração |
+| M18 | Deploy & Observabilidade | `deploy/production` | Deploy |
 
 ---
 
@@ -173,7 +178,7 @@ feat(ui): auth pages — login, forgot-password, auth layout
 - [x] Timestamp relativo ("há 5 min", "há 2h")
 
 **Notificações pendentes**
-- [ ] Criar `components/shared/NotificationBell.tsx` no header com badge de contagem
+- [x] Criar `components/layout/NotificationBell.tsx` no header com badge de contagem
 
 **Página**
 - [x] Criar `app/(dashboard)/dashboard/page.tsx` compondo os componentes acima
@@ -218,6 +223,15 @@ feat(ui): dashboard — metric cards, funnel chart, activity feed, notifications
 - [x] Criar `components/leads/LeadDetailClient.tsx` — hero card, grid de contato/observações, timeline de atividades com ícones por tipo, dialog de edição inline
 - [x] Criar `app/(dashboard)/leads/[id]/page.tsx` — Server Component, `await params`, `notFound()` para IDs inválidos
 
+**Triagem Inteligente de Leads (IA — UI com dados mock)**
+- [x] Criar `components/leads/LeadTriagePanel.tsx` — painel colapsável na página de detalhe do lead com:
+  - [x] Classificação da área jurídica (ex: Trabalhista, Cível, Família)
+  - [x] Resumo da demanda gerado por IA
+  - [x] Nível de urgência (badge: Alta / Média / Baixa)
+  - [x] Sugestão de encaminhamento interno
+  - [x] Ficha estruturada gerada a partir da conversa/entrada
+- [x] Dados mockados — integração real com Claude na Fase 3
+
 **Verificação**
 - [x] Tabela com 15 leads sem erros de console
 - [x] Busca por nome/empresa em tempo real
@@ -237,70 +251,121 @@ feat(ui/leads): tabela de leads, filtros, CRUD e página de detalhe
 
 ---
 
-### M4b · Kanban UI (pendente)
+### M4b · Kanban UI ✅ merged → `master`
 
-**Branch:** `ui/kanban` *(não iniciado)*
+**Branch:** `ui/kanban` ✅ merged → `master`
 **Objetivo:** Visão alternativa em Kanban com drag-and-drop para os mesmos dados de leads.
 
-#### Entregas (planejadas)
+#### Entregas
 
-- [ ] Criar `components/kanban/KanbanBoard.tsx` — container de colunas com scroll horizontal
-- [ ] Criar `components/kanban/KanbanColumn.tsx` — cabeçalho com nome do estágio, cor e contagem
-- [ ] Criar `components/kanban/KanbanCard.tsx` — dados do lead no card
-- [ ] Implementar drag-and-drop com `@hello-pangea/dnd`
-- [ ] Toggle "Tabela / Kanban" na página de leads
-- [ ] Build limpo
+- [x] Criar `components/kanban/KanbanBoard.tsx` — container de colunas com scroll horizontal
+- [x] Criar `components/kanban/KanbanColumn.tsx` — cabeçalho com nome do estágio, cor e contagem
+- [x] Criar `components/kanban/KanbanCard.tsx` — dados do lead no card
+- [x] Implementar drag-and-drop com `@hello-pangea/dnd`
+- [x] Toggle "Tabela / Kanban" na página de leads
+- [x] Build limpo
 
 ---
 
-### M5 · Inbox UI
+### M5 · Casos UI
 
-**Branch:** `ui/inbox`
-**Objetivo:** Interface de inbox centralizada com lista de conversas, view do chat e painel de contexto do lead.
+**Branch:** `ui/casos`
+**Objetivo:** Módulo de operação jurídica — listagem e detalhe de casos ativos, separando a operação comercial (Leads/Pipeline) da operação jurídica (Casos). Inclui Dossiê do caso com resumo por IA.
+
+> Casos representam a etapa pós-contratação: lead convertido → caso aberto. A jornada é: Leads → Pipeline → **Casos** → Radar → Calendário.
 
 #### Entregas
 
 **Dados mock**
-- [ ] Criar `lib/mock/conversations.ts` com conversas e mensagens de exemplo
-- [ ] Criar `types/conversation.ts` com interfaces: `Conversation`, `Message`, `MessageSender`, `MessageSource`
+- [ ] Criar `lib/mock/casos.ts` — 8 casos em andamento com campos: título, área jurídica, responsável, cliente, status (ativo/suspenso/encerrado), data de abertura, última movimentação, processos vinculados
+- [ ] Criar `types/caso.ts` — interfaces `Caso`, `CasoStatus`, `ProcessoVinculado`, `DossieData`
 
-**Lista de conversas**
-- [ ] Criar `components/inbox/ConversationList.tsx` — lista lateral com preview da última mensagem, nome do lead, origem (WhatsApp/site), timestamp, badge "não lida"
-- [ ] Conversa selecionada tem fundo destacado
-- [ ] Campo de busca no topo da lista
+**Lista de Casos**
+- [ ] Criar `components/casos/CasosTable.tsx` — tabela com: título, área, cliente, responsável, status, última movimentação
+- [ ] Criar `components/casos/CasoStatusBadge.tsx` — badge por status
+- [ ] Criar `components/casos/CasoFormDialog.tsx` — criar/editar caso (título, área jurídica, cliente, responsável, observações)
+- [ ] Criar `components/casos/CasosClient.tsx` — state owner com busca e filtros
+- [ ] Criar `app/(dashboard)/casos/page.tsx`
 
-**View do chat**
-- [ ] Criar `components/inbox/ChatView.tsx` — timeline de mensagens em ordem cronológica
-- [ ] Criar `components/inbox/MessageBubble.tsx` — bolha diferenciada por remetente: `client` (esquerda, cinza), `agent` (esquerda, roxo claro, com label "Agente IA"), `user` (direita, azul)
-- [ ] Indicador de handoff: banner "Atendimento passado para humano" com timestamp
-- [ ] Scroll automático para última mensagem
-
-**Painel de contexto do lead**
-- [ ] Criar `components/inbox/LeadContextPanel.tsx` — painel lateral direito com dados do lead: nome, email, telefone, tipo de caso, estágio atual, responsável
-- [ ] Link "Ver no Kanban" → navega para a rota `/leads`
-
-**Layout de três colunas**
-- [ ] `app/(dashboard)/inbox/page.tsx` com layout: lista (280px fixo) | chat (flex) | contexto (320px fixo)
-- [ ] Em tablet: contexto some, fica em Sheet abrível
-- [ ] Em mobile: navegação entre views (lista → chat → contexto)
+**Página de Detalhe do Caso (Dossiê)**
+- [ ] Criar `app/(dashboard)/casos/[id]/page.tsx` — Server Component com `notFound()` para IDs inválidos
+- [ ] Criar `components/casos/DossieClient.tsx` — layout de duas colunas: conteúdo principal + painel lateral
+- [ ] **Seção: Visão Geral** — dados do caso, responsável, área jurídica, status, datas
+- [ ] **Seção: Linha do Tempo** — eventos cronológicos do caso (audiências, petições, movimentações, marcos)
+- [ ] **Seção: Processos Vinculados** — lista de processos com número, tribunal, última movimentação
+- [ ] **Seção: Próximos Prazos** — lista de prazos ordenados por data
+- [ ] **Seção: Documentos** — lista de documentos (estrutura apenas; upload na Fase 3)
+- [ ] **Painel: Dossiê Inteligente (IA — UI com dados mock)**
+  - [ ] Criar `components/casos/DossieInteligente.tsx` — painel colapsável com:
+    - [ ] Resumo vivo do caso (narrativa consolidada)
+    - [ ] Pontos críticos em aberto
+    - [ ] Pendências identificadas
+    - [ ] Próximos marcos esperados
+    - [ ] Última movimentação relevante
+    - [ ] Contexto consolidado para retomada rápida
+  - [ ] Dados mockados — integração real com Claude na Fase 3
 
 **Verificação**
-- [ ] Clicar na conversa exibe as mensagens corretas
-- [ ] Bolhas renderizam com diferenciação visual clara
-- [ ] Layout responsivo funciona
+- [ ] Lista de casos renderiza com dados mock sem erros
+- [ ] Filtros e busca funcionam
+- [ ] Página de detalhe carrega com dossiê completo
+- [ ] Dossiê Inteligente exibe dados mock formatados
 - [ ] Build passa limpo
 
 **Commit final:**
 ```
-feat(ui): inbox — conversation list, chat view, message bubbles, lead context panel
+feat(ui/casos): listagem de casos, dossiê com linha do tempo e painel de IA mock
 ```
 
 ---
 
-### M6 · Calendar UI
+### M6 · Radar UI
+
+**Branch:** `ui/radar`
+**Objetivo:** Central de monitoramento jurídico — publicações, movimentações processuais, alertas, prazos gerados por movimentações. Cada item tem classificação de urgência e indicação se exige ação.
+
+#### Entregas
+
+**Dados mock**
+- [ ] Criar `lib/mock/radar.ts` — 20 itens de radar: publicações, movimentações, alertas de prazo, com campos: tipo, caso vinculado, cliente, data, urgência, exige ação, resumo IA, próximo passo sugerido
+- [ ] Criar `types/radar.ts` — interfaces `RadarItem`, `RadarTipo`, `RadarUrgencia`
+
+**Lista do Radar**
+- [ ] Criar `components/radar/RadarList.tsx` — lista com agrupamento por data (hoje, esta semana, anteriores)
+- [ ] Criar `components/radar/RadarCard.tsx` — card com: tipo (badge), caso, cliente, data, urgência (badge colorido), indicador "Exige ação" (ícone destacado)
+- [ ] Criar `components/radar/RadarFilters.tsx` — filtros: tipo, urgência, caso, exige ação
+- [ ] Criar `components/radar/RadarClient.tsx` — state owner
+- [ ] Criar `app/(dashboard)/radar/page.tsx`
+
+**Painel de Detalhe do Item**
+- [ ] Criar `components/radar/RadarItemDetail.tsx` — Sheet lateral que abre ao clicar num item:
+  - [ ] Cabeçalho: tipo, data, caso vinculado
+  - [ ] **Resumo Inteligente (IA — UI com dados mock)**:
+    - [ ] Resumo claro do andamento processual
+    - [ ] Explicação prática do que aconteceu
+    - [ ] Classificação de urgência/prioridade
+    - [ ] Indicação se exige ação e qual
+    - [ ] Sugestão de próximo passo
+  - [ ] Ações rápidas: "Criar prazo", "Atualizar caso", "Marcar como resolvido"
+
+**Verificação**
+- [ ] Lista renderiza com dados mock, agrupada por data
+- [ ] Filtros funcionam corretamente
+- [ ] Sheet de detalhe abre e exibe Resumo Inteligente mockado
+- [ ] Badges de urgência com cores corretas (vermelho/alto, amarelo/médio, cinza/baixo)
+- [ ] Build passa limpo
+
+**Commit final:**
+```
+feat(ui/radar): central de monitoramento — lista, filtros, painel de detalhe e resumo IA mock
+```
+
+---
+
+### M7 · Calendar UI
 
 **Branch:** `ui/calendar`
-**Objetivo:** Visualização de calendário com eventos de agendamento, modal de criação e conexão visual com leads.
+**Objetivo:** Visualização de calendário com eventos de agendamento, modal de criação e conexão visual com casos e leads.
 
 #### Entregas
 
@@ -316,14 +381,14 @@ feat(ui): inbox — conversation list, chat view, message bubbles, lead context 
 - [ ] Cor do evento por status: `scheduled` azul, `confirmed` verde, `cancelled` cinza
 
 **Cards de evento**
-- [ ] Criar `components/calendar/EventCard.tsx` — título, horário, nome do lead vinculado
+- [ ] Criar `components/calendar/EventCard.tsx` — título, horário, caso/lead vinculado
 - [ ] Clicar no evento abre modal de detalhes
 
 **Modal de detalhes do evento**
-- [ ] Criar `components/calendar/EventDetailModal.tsx` — título, data/hora início e fim, descrição, lead vinculado, status, ações (editar, cancelar)
+- [ ] Criar `components/calendar/EventDetailModal.tsx` — título, data/hora início e fim, descrição, caso/lead vinculado, status, ações (editar, cancelar)
 
 **Modal de criação de evento**
-- [ ] Criar `components/calendar/EventCreateModal.tsx` — título, data/hora, duração, lead (select), advogado, notas
+- [ ] Criar `components/calendar/EventCreateModal.tsx` — título, data/hora, duração, caso (select), advogado, notas
 
 **Página**
 - [ ] Criar `app/(dashboard)/calendar/page.tsx`
@@ -341,7 +406,7 @@ feat(ui): calendar — month/week/day views, event cards, create/detail modals
 
 ---
 
-### M7 · Settings & Users UI
+### M8 · Settings & Users UI
 
 **Branch:** `ui/settings`
 **Objetivo:** Área de configurações completa com dados do escritório, parâmetros do agente e gestão de usuários.
@@ -400,7 +465,7 @@ feat(ui): settings — office form, agent config, integrations panel, user manag
 
 ---
 
-### M8 · Database & Supabase Setup
+### M9 · Database & Supabase Setup
 
 **Branch:** `backend/database`
 **Objetivo:** Projeto Supabase criado, schema completo aplicado, RLS ativo em todas as tabelas, Prisma conectado.
@@ -419,15 +484,18 @@ feat(ui): settings — office form, agent config, integrations panel, user manag
 - [ ] Criar `supabase/migrations/002_users.sql` — tabela `users` + enum `role` + enum `status`
 - [ ] Criar `supabase/migrations/003_lead_stages.sql` — tabela `lead_stages`
 - [ ] Criar `supabase/migrations/004_leads.sql` — tabela `leads` + enum `urgency` + enum `origin`
-- [ ] Criar `supabase/migrations/005_lead_messages.sql` — tabela `lead_messages`
-- [ ] Criar `supabase/migrations/006_appointments.sql` — tabela `appointments`
-- [ ] Criar `supabase/migrations/007_integrations.sql` — tabela `integrations`
-- [ ] Criar `supabase/migrations/008_notifications.sql` — tabela `notifications`
-- [ ] Criar `supabase/migrations/009_agent_logs.sql` — tabela `agent_logs`
+- [ ] Criar `supabase/migrations/005_casos.sql` — tabela `casos` + enum `caso_status`
+- [ ] Criar `supabase/migrations/006_caso_timeline.sql` — tabela `caso_timeline` (eventos do caso)
+- [ ] Criar `supabase/migrations/007_processos.sql` — tabela `processos` (vinculados a casos)
+- [ ] Criar `supabase/migrations/008_radar_items.sql` — tabela `radar_items` (publicações, movimentações, alertas)
+- [ ] Criar `supabase/migrations/009_appointments.sql` — tabela `appointments`
+- [ ] Criar `supabase/migrations/010_integrations.sql` — tabela `integrations`
+- [ ] Criar `supabase/migrations/011_notifications.sql` — tabela `notifications`
+- [ ] Criar `supabase/migrations/012_agent_logs.sql` — tabela `agent_logs`
 - [ ] Aplicar migrations via Supabase CLI (`supabase db push`)
 
 **RLS Policies**
-- [ ] Criar `supabase/migrations/010_rls.sql` com políticas para todas as tabelas
+- [ ] Criar `supabase/migrations/013_rls.sql` com políticas para todas as tabelas
 - [ ] Política base: `tenant_id = (auth.jwt() ->> 'tenant_id')::uuid`
 - [ ] Testar isolamento: usuário de tenant A não enxerga dados do tenant B
 
@@ -438,7 +506,7 @@ feat(ui): settings — office form, agent config, integrations panel, user manag
 - [ ] Criar `lib/prisma.ts` — singleton do PrismaClient
 
 **Seeds**
-- [ ] Criar `supabase/seed.sql` com 1 tenant, 2 usuários, 6 estágios padrão e 5 leads de exemplo
+- [ ] Criar `supabase/seed.sql` com 1 tenant, 2 usuários, 6 estágios padrão, 5 leads e 3 casos de exemplo
 
 **Verificação**
 - [ ] `prisma db pull` não gera erros
@@ -453,7 +521,7 @@ feat(backend): database schema — all tables, RLS policies, Prisma setup, seed 
 
 ---
 
-### M9 · Auth Backend
+### M10 · Auth Backend
 
 **Branch:** `backend/auth`
 **Objetivo:** Login real com Supabase Auth, sessão persistente, rotas protegidas por middleware, tenant vinculado ao usuário.
@@ -462,7 +530,7 @@ feat(backend): database schema — all tables, RLS policies, Prisma setup, seed 
 
 **Supabase Auth**
 - [ ] Habilitar Auth por email/senha no Supabase Dashboard
-- [ ] Criar `supabase/migrations/011_auth_hooks.sql` — trigger que popula `users` após signup
+- [ ] Criar `supabase/migrations/014_auth_hooks.sql` — trigger que popula `users` após signup
 - [ ] Configurar custom JWT claims para incluir `tenant_id` e `role`
 
 **Middleware de proteção**
@@ -500,7 +568,7 @@ feat(backend): auth — Supabase Auth, session management, route protection, pas
 
 ---
 
-### M10 · Leads & Kanban Backend
+### M11 · Leads & Kanban Backend
 
 **Branch:** `backend/leads`
 **Objetivo:** Kanban 100% real — leads vindos do banco, drag-and-drop persiste no Supabase, CRUD completo.
@@ -532,61 +600,126 @@ feat(backend): auth — Supabase Auth, session management, route protection, pas
 - [ ] Filtro por responsável, origem e estágio passa parâmetros para `getLeads()`
 - [ ] Busca por nome é debounced (300ms)
 
+**Triagem Inteligente de Leads (IA — backend real)**
+- [ ] Criar `app/actions/ai/lead-triage.ts`:
+  - [ ] `triageLead(leadId)` — chama Claude API com contexto do lead/conversa
+  - [ ] Retorna: área jurídica, resumo da demanda, urgência, sugestão de encaminhamento
+  - [ ] Salva resultado em `leads.ai_triage` (JSONB)
+- [ ] Conectar `LeadTriagePanel` ao backend real
+- [ ] Acionar triagem automaticamente quando lead é criado via webhook
+
 **Verificação**
 - [ ] Lead criado no modal aparece no board sem refresh manual
 - [ ] Drag-and-drop persiste após recarregar a página
 - [ ] Filtros reduzem corretamente os resultados do banco
+- [ ] Triagem retorna resultado real do Claude
 - [ ] Build passa limpo
 
 **Commit final:**
 ```
-feat(backend): leads — CRUD, stage management, drag-and-drop persistence, filters
+feat(backend): leads — CRUD, stage management, drag-and-drop persistence, AI triage
 ```
 
 ---
 
-### M11 · Inbox Backend + Realtime
+### M12 · Casos Backend
 
-**Branch:** `backend/inbox`
-**Objetivo:** Inbox com conversas e mensagens reais, atualização em tempo real via Supabase Realtime, endpoint para n8n escrever mensagens.
+**Branch:** `backend/casos`
+**Objetivo:** Casos e dossiê 100% reais — dados do banco, linha do tempo persistida, Dossiê Inteligente alimentado pelo Claude.
 
 #### Entregas
 
 **Server Actions**
-- [ ] Criar `app/actions/conversations.ts`:
-  - [ ] `getConversations()` — lista leads com última mensagem e contagem de não lidas
-  - [ ] `getMessages(leadId)` — busca mensagens de uma conversa
-  - [ ] `markHandoff(leadId)` — flag de transbordo para humano
+- [ ] Criar `app/actions/casos.ts`:
+  - [ ] `getCasos(filters)` — lista casos do tenant
+  - [ ] `getCaso(id)` — dados completos do caso com timeline e processos
+  - [ ] `createCaso(data)` — cria novo caso (pode ser disparado ao converter lead)
+  - [ ] `updateCaso(id, data)` — edita caso
+  - [ ] `addTimelineEvent(casoId, event)` — adiciona evento à linha do tempo
+- [ ] Criar `app/actions/processos.ts`:
+  - [ ] `getProcessosByCaso(casoId)` — lista processos vinculados
+  - [ ] `addProcesso(casoId, data)` — vincula processo ao caso
 
-**Inbox conectado**
-- [ ] Substituir mock em `app/(dashboard)/inbox/page.tsx` pelo fetch real
-- [ ] `ConversationList` carrega conversas reais
-- [ ] `ChatView` carrega mensagens reais do lead selecionado
+**Dossiê Inteligente (IA — backend real)**
+- [ ] Criar `app/actions/ai/dossie.ts`:
+  - [ ] `generateDossie(casoId)` — chama Claude API com contexto consolidado do caso
+  - [ ] Contexto: timeline, processos, prazos, responsável, área jurídica
+  - [ ] Retorna: resumo vivo, pontos críticos, pendências, próximos marcos, última movimentação relevante
+  - [ ] Salva resultado em `casos.dossie_ia` (JSONB) com timestamp
+  - [ ] Cache inteligente: regenera apenas quando há novos eventos na timeline
+- [ ] Conectar `DossieInteligente` ao backend real
+- [ ] Botão "Atualizar Dossiê" para regenerar manualmente
 
-**Realtime**
-- [ ] Criar `lib/hooks/useRealtimeMessages.ts` — subscribe em `lead_messages` filtrado por `lead_id`
-- [ ] Nova mensagem chega → append automático na ChatView sem refresh
-- [ ] Criar `lib/hooks/useRealtimeNotifications.ts` — subscribe em `notifications` do usuário
-
-**Webhook para n8n**
-- [ ] Criar `app/api/webhooks/message/route.ts` — endpoint POST que n8n chama para registrar nova mensagem
-- [ ] Validar origem com secret header (`X-Webhook-Secret`)
-- [ ] Criar ou atualizar lead, inserir em `lead_messages`, criar notificação
+**Conversão Lead → Caso**
+- [ ] Criar `app/actions/leads.ts#convertToCase()` — cria caso a partir de lead convertido
+- [ ] Trigger: ao mover lead para estágio "Cliente", oferecer criação do caso
 
 **Verificação**
-- [ ] Abrir inbox em duas abas: mensagem inserida no banco aparece em ambas sem refresh
-- [ ] Handoff banner aparece quando flag está ativa
-- [ ] POST no endpoint webhook insere mensagem no banco
+- [ ] Caso criado aparece na lista sem refresh
+- [ ] Linha do tempo persiste após reload
+- [ ] Dossiê Inteligente retorna resumo real do Claude
+- [ ] Cache impede rechamada desnecessária da API
 - [ ] Build passa limpo
 
 **Commit final:**
 ```
-feat(backend): inbox — real conversations, Supabase Realtime, n8n webhook endpoint
+feat(backend): casos — CRUD, timeline, processo vínculo, Dossiê Inteligente com Claude
 ```
 
 ---
 
-### M12 · Dashboard Backend
+### M13 · Radar Backend
+
+**Branch:** `backend/radar`
+**Objetivo:** Radar 100% real — publicações e movimentações vindas de Escavador/Datajud via n8n, Resumo Inteligente gerado pelo Claude, prazos criados automaticamente.
+
+#### Entregas
+
+**Server Actions**
+- [ ] Criar `app/actions/radar.ts`:
+  - [ ] `getRadarItems(filters)` — lista itens com filtros (tipo, urgência, exige ação, caso)
+  - [ ] `markResolved(itemId)` — marca item como resolvido
+  - [ ] `createPrazo(itemId, data)` — cria prazo a partir de item do radar
+  - [ ] `updateCasoFromRadar(itemId, casoId)` — atualiza caso com movimentação
+
+**Resumo Inteligente (IA — backend real)**
+- [ ] Criar `app/actions/ai/radar-summary.ts`:
+  - [ ] `summarizeRadarItem(itemId)` — chama Claude API com conteúdo da publicação/movimentação
+  - [ ] Retorna: resumo prático, explicação do acontecimento, urgência classificada, se exige ação, próximo passo sugerido
+  - [ ] Salva resultado em `radar_items.ai_summary` (JSONB)
+  - [ ] Gerado automaticamente na ingestão do item via webhook
+
+**Webhook de ingestão (n8n → plataforma)**
+- [ ] Criar `app/api/webhooks/radar/route.ts` — endpoint POST que n8n chama ao detectar movimentação
+  - [ ] Valida `X-Webhook-Secret`
+  - [ ] Cria `radar_item` no banco
+  - [ ] Aciona `summarizeRadarItem()` de forma assíncrona
+  - [ ] Cria notificação para o responsável pelo caso
+- [ ] Criar `app/api/webhooks/publicacao/route.ts` — ingestão de publicações (DOU, DEJT, TJs)
+
+**Realtime**
+- [ ] Criar `lib/hooks/useRealtimeRadar.ts` — subscribe em `radar_items` do tenant
+- [ ] Novo item aparece no topo da lista automaticamente com badge "Novo"
+
+**Notificações**
+- [ ] Itens de urgência Alta geram notificação push imediata no sino do header
+- [ ] Itens que exigem ação têm badge destacado na navegação do Radar
+
+**Verificação**
+- [ ] POST no webhook cria item no radar e dispara resumo IA
+- [ ] Item aparece no radar em tempo real (Realtime)
+- [ ] Resumo Inteligente exibe resultado real do Claude
+- [ ] Criar prazo a partir de item do radar persiste no banco
+- [ ] Build passa limpo
+
+**Commit final:**
+```
+feat(backend): radar — webhook ingestão, Resumo Inteligente com Claude, Realtime, prazos
+```
+
+---
+
+### M14 · Dashboard Backend
 
 **Branch:** `backend/dashboard`
 **Objetivo:** Métricas e feeds do dashboard com dados reais do banco.
@@ -598,31 +731,34 @@ feat(backend): inbox — real conversations, Supabase Realtime, n8n webhook endp
   - [ ] `getNewLeadsToday(tenantId)` — leads criados nas últimas 24h
   - [ ] `getLeadsByStage(tenantId)` — contagem por estágio para o funil
   - [ ] `getConversionRate(tenantId)` — leads em "Cliente" / total de leads (exceto "Perdido")
-  - [ ] `getRecentActivity(tenantId, limit)` — últimos eventos de `agent_logs` + `lead_messages`
+  - [ ] `getActiveCasos(tenantId)` — casos ativos no momento
+  - [ ] `getRadarUrgentItems(tenantId)` — itens do radar com urgência Alta não resolvidos
+  - [ ] `getRecentActivity(tenantId, limit)` — últimos eventos de `agent_logs` + `caso_timeline`
   - [ ] `getPendingNotifications(userId)` — notificações não lidas
 
 **Dashboard conectado**
 - [ ] `app/(dashboard)/dashboard/page.tsx` vira Server Component que chama as queries em paralelo (`Promise.all`)
-- [ ] MetricCards recebem dados reais
+- [ ] MetricCards recebem dados reais (incluindo casos ativos e alertas do radar)
 - [ ] FunnelChart recebe contagens reais por estágio
 - [ ] ActivityFeed recebe eventos reais
 
 **Verificação**
 - [ ] Criar um lead → número no dashboard incrementa
 - [ ] Mover lead para "Cliente" → taxa de conversão atualiza
+- [ ] Item urgente no Radar → aparece no dashboard como alerta
 - [ ] Build passa limpo
 
 **Commit final:**
 ```
-feat(backend): dashboard — real metrics, funnel data, activity feed from database
+feat(backend): dashboard — real metrics, funnel data, radar alerts, activity feed from database
 ```
 
 ---
 
-### M13 · Calendar Backend
+### M15 · Calendar Backend
 
 **Branch:** `backend/calendar`
-**Objetivo:** Agendamentos persistindo no banco, vinculados a leads e usuários.
+**Objetivo:** Agendamentos persistindo no banco, vinculados a casos e leads, com estrutura pronta para sync Google Calendar.
 
 #### Entregas
 
@@ -639,8 +775,9 @@ feat(backend): dashboard — real metrics, funnel data, activity feed from datab
 - [ ] Cancelar evento no modal chama `cancelAppointment()`
 - [ ] Cor do evento reflete status real
 
-**Select de lead no modal**
-- [ ] Campo "Lead" no `EventCreateModal` faz search em `leads` do tenant
+**Select de caso/lead no modal**
+- [ ] Campo "Caso" no `EventCreateModal` faz search em `casos` do tenant
+- [ ] Campo "Lead" opcional para compromissos na etapa comercial
 
 **Verificação**
 - [ ] Criar evento → aparece no calendário no dia correto
@@ -649,12 +786,12 @@ feat(backend): dashboard — real metrics, funnel data, activity feed from datab
 
 **Commit final:**
 ```
-feat(backend): calendar — appointments CRUD, lead association, status management
+feat(backend): calendar — appointments CRUD, caso/lead association, status management
 ```
 
 ---
 
-### M14 · Settings & Users Backend
+### M16 · Settings & Users Backend
 
 **Branch:** `backend/settings`
 **Objetivo:** Settings e gestão de usuários 100% funcionais — dados do escritório persistidos, convites enviados, roles aplicados.
@@ -704,40 +841,44 @@ feat(backend): settings and users — tenant config, user management, role-based
 
 ---
 
-### M15 · Integração n8n
+### M17 · Integração n8n
 
 **Branch:** `backend/n8n`
-**Objetivo:** n8n e a plataforma se comunicando de forma bidirecional — agente cria leads, envia mensagens, move estágios e dispara notificações pelo painel.
+**Objetivo:** n8n e a plataforma se comunicando de forma bidirecional — agente cria leads, move estágios, ingere movimentações no Radar, cria itens na timeline de Casos e dispara notificações.
 
 #### Entregas
 
 **Endpoints de webhook (Next.js → n8n)**
 - [ ] Criar `app/api/webhooks/lead-created/route.ts` — n8n recebe quando lead é criado manualmente no painel
-- [ ] Criar `app/api/webhooks/handoff/route.ts` — n8n recebe quando advogado marca handoff no inbox
+- [ ] Criar `app/api/webhooks/lead-converted/route.ts` — n8n recebe quando lead vira caso
+- [ ] Criar `app/api/webhooks/caso-updated/route.ts` — n8n recebe quando caso é atualizado
 - [ ] Todos os endpoints validam `X-Webhook-Secret`
 
-**Endpoints de ingestão (n8n → Next.js / Supabase direto)**
-- [ ] Confirmar que `app/api/webhooks/message/route.ts` (M11) funciona end-to-end com n8n real
+**Endpoints de ingestão (n8n → plataforma)**
+- [ ] Confirmar que `app/api/webhooks/radar/route.ts` (M13) funciona end-to-end com n8n real
 - [ ] Criar `app/api/webhooks/agent-log/route.ts` — n8n registra ação do agente (triagem, qualificação)
 - [ ] Criar `app/api/webhooks/stage-move/route.ts` — n8n move lead de estágio automaticamente
+- [ ] Criar `app/api/webhooks/caso-timeline/route.ts` — n8n adiciona evento à timeline do caso
 
 **Notificações em tempo real**
 - [ ] Quando n8n cria notificação no banco, `useRealtimeNotifications` a exibe no header
 - [ ] Badge de sino incrementa automaticamente
-- [ ] Clicar na notificação navega para o lead ou conversa correspondente
+- [ ] Clicar na notificação navega para o caso ou radar correspondente
 
 **Teste end-to-end**
-- [ ] Simular mensagem de WhatsApp → n8n processa → lead aparece no Kanban → mensagem no Inbox → notificação no sino
-- [ ] Simular handoff no painel → n8n recebe webhook → registra no agent_log
+- [ ] Simular mensagem de WhatsApp → n8n processa → lead aparece no Kanban → triagem IA gera ficha → notificação no sino
+- [ ] Simular movimentação processual → n8n detecta → item aparece no Radar → resumo IA gerado → notificação para responsável
+- [ ] Simular lead convertido → caso criado → dossiê IA gerado
 
 **Verificação**
-- [ ] Fluxo completo WhatsApp → Kanban funciona sem intervenção manual
+- [ ] Fluxo completo WhatsApp → Kanban → triagem IA funciona sem intervenção manual
+- [ ] Fluxo completo movimentação → Radar → resumo IA funciona
 - [ ] Todos os webhooks respondem 200 em produção
 - [ ] Build passa limpo
 
 **Commit final:**
 ```
-feat(integration): n8n ↔ platform — webhooks, lead sync, realtime notifications, end-to-end flow
+feat(integration): n8n ↔ platform — webhooks, lead sync, radar ingest, realtime notifications
 ```
 
 ---
@@ -746,7 +887,7 @@ feat(integration): n8n ↔ platform — webhooks, lead sync, realtime notificati
 
 ---
 
-### M16 · Deploy & Observabilidade
+### M18 · Deploy & Observabilidade
 
 **Branch:** `deploy/production`
 **Objetivo:** Plataforma em produção, monitorada, com CI/CD configurado e variáveis de ambiente seguras.
@@ -754,7 +895,7 @@ feat(integration): n8n ↔ platform — webhooks, lead sync, realtime notificati
 #### Entregas
 
 **Variáveis de ambiente (produção)**
-- [ ] Configurar no Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `WEBHOOK_SECRET`, `RESEND_API_KEY`
+- [ ] Configurar no Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `WEBHOOK_SECRET`, `RESEND_API_KEY`, `ANTHROPIC_API_KEY`
 - [ ] Remover todos os dados mock do código (substituídos por dados reais)
 - [ ] Confirmar que `.env.example` está atualizado e `.env.local` não está no git
 
@@ -778,7 +919,7 @@ feat(integration): n8n ↔ platform — webhooks, lead sync, realtime notificati
 **PostHog**
 - [ ] Instalar `posthog-js`
 - [ ] Criar `components/layout/PostHogProvider.tsx`
-- [ ] Rastrear: login, lead criado, lead movido, handoff marcado
+- [ ] Rastrear: login, lead criado, lead movido, caso criado, item radar resolvido
 - [ ] Identificar usuário por `userId` e `tenantId`
 
 **Performance & SEO**
@@ -787,7 +928,7 @@ feat(integration): n8n ↔ platform — webhooks, lead sync, realtime notificati
 - [ ] Rodar Lighthouse no dashboard: meta Performance > 85
 
 **QA final**
-- [ ] Testar fluxo completo em produção: cadastro → login → criar lead → mover estágio → ver no inbox → criar agendamento
+- [ ] Testar fluxo completo em produção: cadastro → login → criar lead → mover estágio → converter em caso → ver dossiê IA → item no radar com resumo IA → criar agendamento
 - [ ] Testar em mobile (Chrome DevTools)
 - [ ] Confirmar RLS: dois tenants não veem dados um do outro
 
@@ -795,51 +936,3 @@ feat(integration): n8n ↔ platform — webhooks, lead sync, realtime notificati
 ```
 feat(deploy): production deploy — Vercel config, CI/CD, Sentry, PostHog, domain, QA sign-off
 ```
-
----
-
-## Resumo de Branches
-
-```
-main
-├── setup/bootstrap          → M0
-├── ui/design-system         → M1
-├── ui/auth                  → M2
-├── ui/dashboard             → M3
-├── ui/kanban                → M4
-├── ui/inbox                 → M5
-├── ui/calendar              → M6
-├── ui/settings              → M7
-├── backend/database         → M8
-├── backend/auth             → M9
-├── backend/leads            → M10
-├── backend/inbox            → M11
-├── backend/dashboard        → M12
-├── backend/calendar         → M13
-├── backend/settings         → M14
-├── backend/n8n              → M15
-└── deploy/production        → M16
-```
-
----
-
-## Regras de Merge
-
-1. Cada branch sai de `main` e volta para `main` via Pull Request
-2. PR requer build passando (CI verifica TypeScript + next build)
-3. Dados mock são permitidos até M8 — a partir de M9 nenhum mock vai para `main`
-4. RLS deve ser verificada manualmente antes de merge de qualquer branch `backend/`
-5. Deploy de produção só acontece após QA do M15 (integração n8n) aprovado
-
----
-
-## Estimativa
-
-| Fase | Milestones | Semanas estimadas |
-|---|---|---|
-| Fundação | M0 | 0.5 |
-| Interface | M1–M7 | 4–5 |
-| Backend | M8–M14 | 4–5 |
-| Integração | M15 | 1–2 |
-| Deploy | M16 | 0.5–1 |
-| **Total** | **16 milestones** | **~10–14 semanas** |

@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/card'
 import { StatusBadge } from './StatusBadge'
 import { LeadFormDialog } from './LeadFormDialog'
+import { LeadTriagePanel } from './LeadTriagePanel'
+import { MOCK_LEAD_TRIAGE } from '@/lib/mock/leads'
 import type { Lead, LeadActivity } from '@/types/lead'
 
 interface LeadDetailClientProps {
@@ -98,6 +100,9 @@ export function LeadDetailClient({ lead, activities }: LeadDetailClientProps) {
           </div>
         </CardHeader>
       </Card>
+
+      {/* Triagem Inteligente */}
+      <LeadTriagePanel triage={MOCK_LEAD_TRIAGE[currentLead.id]} />
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Contact info */}

@@ -1,4 +1,4 @@
-import type { Lead, LeadActivity, LeadStatus } from '@/types/lead'
+import type { Lead, LeadActivity, LeadStatus, LeadTriage, UrgencyLevel } from '@/types/lead'
 
 export const STATUS_COLORS: Record<LeadStatus, string> = {
   Novo: '#3B82F6',
@@ -191,6 +191,75 @@ export const MOCK_LEADS: Lead[] = [
     createdAt: '2025-10-20T14:00:00Z',
   },
 ]
+
+export const URGENCY_COLORS: Record<UrgencyLevel, string> = {
+  Alta: '#ef4444',
+  Média: '#f97316',
+  Baixa: '#22c55e',
+}
+
+export const MOCK_LEAD_TRIAGE: Record<string, LeadTriage> = {
+  'lead-001': {
+    legalArea: 'Família',
+    demandSummary: 'Divórcio amigável com partilha de bens imóveis. Cliente apresenta documentação completa e ambas as partes estão de acordo.',
+    urgency: 'Baixa',
+    routingSuggestion: 'Dr. Carlos Mendes — Especialista em Direito de Família',
+    intakeCards: [
+      { id: 'tc-001-1', title: 'Documentação recebida', content: 'RG, CPF, certidão de casamento, comprovante de residência, matrícula dos imóveis.' },
+      { id: 'tc-001-2', title: 'Próximos passos', content: 'Elaborar minuta do acordo de divórcio e agendar reunião para assinatura.' },
+    ],
+  },
+  'lead-002': {
+    legalArea: 'Trabalhista',
+    demandSummary: 'Disputa trabalhista com ex-funcionário que alega horas extras não pagas e rescisão indevida. Ação em fase de notificação.',
+    urgency: 'Alta',
+    routingSuggestion: 'Dra. Mariana Costa — Especialista em Direito Trabalhista',
+    intakeCards: [
+      { id: 'tc-002-1', title: 'Documentação necessária', content: 'Cartão de ponto, contracheques dos últimos 12 meses, TRCT assinado, termo de rescisão.' },
+      { id: 'tc-002-2', title: 'Prazo identificado', content: 'Notificação trabalhista com prazo de resposta em 10 dias úteis.' },
+    ],
+  },
+  'lead-003': {
+    legalArea: 'Tributário',
+    demandSummary: 'Empresa busca regularização do CNPJ e orientação sobre enquadramento tributário para reduzir carga fiscal.',
+    urgency: 'Média',
+    routingSuggestion: 'Dr. Carlos Mendes — Direito Empresarial e Tributário',
+    intakeCards: [
+      { id: 'tc-003-1', title: 'Situação atual', content: 'CNPJ com pendências na Receita Federal. Empresa no Simples Nacional há 3 anos.' },
+      { id: 'tc-003-2', title: 'Documentação necessária', content: 'Contrato social, extratos bancários dos últimos 6 meses, certidões negativas.' },
+    ],
+  },
+  'lead-004': {
+    legalArea: 'Empresarial',
+    demandSummary: 'Startup de tecnologia precisa de contrato de prestação de serviços com cláusula de não-competição para contratar consultores sênior.',
+    urgency: 'Média',
+    routingSuggestion: 'Dra. Mariana Costa — Contratos Empresariais',
+    intakeCards: [
+      { id: 'tc-004-1', title: 'Escopo do contrato', content: 'Contrato de prestação de serviços com NDA, cláusula de não-competição por 12 meses e propriedade intelectual.' },
+      { id: 'tc-004-2', title: 'Próximos passos', content: 'Elaborar minuta do contrato e enviar para revisão do cliente até sexta-feira.' },
+    ],
+  },
+  'lead-007': {
+    legalArea: 'Saúde / Consumidor',
+    demandSummary: 'Clínica médica em conflito com operadora de plano de saúde por recusa de cobertura de procedimentos. Cláusulas abusivas identificadas.',
+    urgency: 'Alta',
+    routingSuggestion: 'Dr. Carlos Mendes — Direito do Consumidor e Saúde',
+    intakeCards: [
+      { id: 'tc-007-1', title: 'Evidências coletadas', content: 'Contrato do plano, laudos médicos, negativas de cobertura por escrito, histórico de atendimento.' },
+      { id: 'tc-007-2', title: 'Estratégia sugerida', content: 'Notificação extrajudicial imediata + ação judicial caso sem resposta em 5 dias.' },
+    ],
+  },
+  'lead-010': {
+    legalArea: 'Imobiliário / Rural',
+    demandSummary: 'Regularização de escritura de propriedade rural no Mato Grosso. Pendência em cartório de registro de imóveis.',
+    urgency: 'Média',
+    routingSuggestion: 'Dr. Carlos Mendes — Direito Imobiliário Rural',
+    intakeCards: [
+      { id: 'tc-010-1', title: 'Documentação pendente', content: 'CCIR atualizado, ITR quitado, matrícula do imóvel no cartório de Cuiabá.' },
+      { id: 'tc-010-2', title: 'Próximos passos', content: 'Protocolar pedido no cartório e acompanhar prazo de registro (estimado: 30 dias).' },
+    ],
+  },
+}
 
 export const MOCK_LEAD_ACTIVITIES: Record<string, LeadActivity[]> = {
   'lead-001': [
