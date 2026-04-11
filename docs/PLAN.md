@@ -23,16 +23,15 @@
 | M6 | Radar UI ✅ | `ui/radar` | Interface |
 | M7 | Calendar UI ✅ | `ui/calendar` | Interface |
 | M8 | Settings & Users UI ✅ | `ui/settings` | Interface |
-| M9 | Database & Supabase Setup | `backend/database` | Backend |
-| M10 | Auth Backend | `backend/auth` | Backend |
-| M11 | Leads & Kanban Backend | `backend/leads` | Backend |
-| M12 | Casos Backend | `backend/casos` | Backend |
-| M13 | Radar Backend | `backend/radar` | Backend |
-| M14 | Dashboard Backend | `backend/dashboard` | Backend |
-| M15 | Calendar Backend | `backend/calendar` | Backend |
-| M16 | Settings & Users Backend | `backend/settings` | Backend |
-| M17 | Integração n8n | `backend/n8n` | Integração |
-| M18 | Deploy & Observabilidade | `deploy/production` | Deploy |
+| M9 | Database, Auth & Supabase Setup ✅ | `backend/foundation` | Backend |
+| M10 | Leads & Kanban Backend | `backend/leads` | Backend |
+| M11 | Casos Backend | `backend/casos` | Backend |
+| M12 | Radar Backend | `backend/radar` | Backend |
+| M13 | Dashboard Backend | `backend/dashboard` | Backend |
+| M14 | Calendar Backend | `backend/calendar` | Backend |
+| M15 | Settings & Users Backend | `backend/settings` | Backend |
+| M16 | Integração n8n | `backend/n8n` | Integração |
+| M17 | Deploy & Observabilidade | `deploy/production` | Deploy |
 
 ---
 
@@ -485,12 +484,12 @@ feat(ui/settings): M8 — settings & users UI com escritório, agente, integraç
 
 ---
 
-### M9 · Database & Supabase Setup
+### M9 · Database, Auth & Supabase Setup ✅
 
-**Branch:** `backend/database`
+**Branch:** `backend/foundation` → merged em `master` (PR #14)
 **Objetivo:** Schema completo modelado para a arquitetura real da Lexia — Caso ≠ Processo,
 cliente como entidade própria, OABs dos advogados, campos de sync Escavador/CNJ. RLS ativo.
-Supabase clients prontos para uso no App Router.
+Supabase clients prontos para uso no App Router. Auth backend real com onboarding OAB.
 
 #### Contexto arquitetural
 
@@ -566,101 +565,10 @@ feat(backend/database): schema completo — tenants, clients, leads, casos, proc
 
 ---
 
-### M10 · Auth Backend
+### M10 · Auth Backend ✅ — Incorporado ao M9
 
-**Branch:** `backend/auth`
-**Objetivo:** Login real com Supabase Auth, sessão persistente, rotas protegidas por middleware,
-tenant e role no JWT, onboarding real com captura de OAB.
-
-#### Entregas
-
-**Supabase Auth**
-- [x] Supabase Auth com email/senha habilitado (configurar no Dashboard)
-- [x] JWT claims customizados — hook no Supabase para injetar `tenant_id` e `role` no token
-- [x] Trigger `on_auth_user_created` (migration 021) cria registro em `users` automaticamente
-
-**Middleware de proteção**
-- [x] `middleware.ts` na raiz:
-  - Rotas `(dashboard)` → redirect para `/login` se sem sessão
-  - `/login`, `/signup` → redirect para `/dashboard` se já autenticado
-  - `/onboarding` → acessível apenas com sessão mas sem tenant completo
-  - Refresh de sessão automático (cookie update)
-
-**Login funcional**
-- [x] `app/(auth)/login/page.tsx` conectado ao Supabase Auth
-- [x] `signInWithPassword()` com tratamento de erro (credencial inválida, email não confirmado)
-- [x] Redirect para `/dashboard` após login bem-sucedido
-
-**Signup**
-- [x] `app/(auth)/signup/page.tsx` conectado ao `signUp()`
-- [x] Cria tenant + usuário admin em sequência (Server Action)
-- [x] Redirect para `/onboarding` após signup
-
-**Logout**
-- [x] Server Action `actions/auth.ts#signOut()`
-- [x] Vinculado ao botão de logout no Header
-
-**Forgot / Reset Password**
-- [x] `forgot-password` chama `resetPasswordForEmail()`
-- [x] `reset-password` page para definir nova senha após clicar no link
-
-**Session no servidor**
-- [x] Server Components leem sessão via `lib/supabase/server.ts`
-- [x] `lib/hooks/useUser.ts` — hook client-side para usuário autenticado
-
-**Onboarding real**
-- [x] `app/(onboarding)/onboarding/page.tsx` conectado ao backend
-- [x] Salva dados do escritório em `tenants`
-- [x] Salva número(s) de OAB em `lawyer_oabs`
-- [x] Marca `tenants.onboarding_completed = true` ao final
-- [ ] (Fase 4) Acionar busca Escavador via OAB após onboarding
-
-**Verificação**
-- [ ] Login com credenciais válidas → dashboard
-- [ ] Acesso direto a `/dashboard` sem auth → `/login`
-- [ ] Logout limpa sessão e redireciona para `/login`
-- [ ] Signup cria tenant + user no banco
-- [ ] Onboarding salva OAB em `lawyer_oabs`
-- [ ] JWT token contém `tenant_id` e `role`
-- [ ] Build passa limpo
-
-**Commit final:**
-```
-feat(backend/auth): Supabase Auth, JWT claims, middleware, login/signup/logout, onboarding com OAB
-```
-
-**Middleware de proteção**
-- [ ] Criar `middleware.ts` na raiz — redireciona `/` e rotas `(dashboard)` para `/login` se não autenticado
-- [ ] Redireciona `/login` para `/dashboard` se já autenticado
-
-**Login funcional**
-- [ ] Conectar `app/(auth)/login/page.tsx` ao Supabase Auth
-- [ ] `signInWithPassword()` com tratamento de erros (credencial inválida, email não confirmado)
-- [ ] Redirecionar para `/dashboard` após login
-
-**Logout**
-- [ ] Criar Server Action `app/actions/auth.ts` com `signOut()`
-- [ ] Vincular ao botão de logout no Header
-
-**Forgot Password funcional**
-- [ ] Conectar `app/(auth)/forgot-password/page.tsx` ao `resetPasswordForEmail()`
-- [ ] Email de recuperação disparado (configurar Resend no Supabase)
-- [ ] Criar `app/(auth)/reset-password/page.tsx` — nova senha após clicar no link do email
-
-**Session no servidor**
-- [ ] Confirmar que Server Components leem `session` corretamente via `supabase/server.ts`
-- [ ] Criar `lib/hooks/useUser.ts` — hook client-side para acesso ao usuário autenticado
-
-**Verificação**
-- [ ] Login com credenciais válidas redireciona para dashboard
-- [ ] Acesso direto a `/dashboard` sem auth redireciona para `/login`
-- [ ] Logout funciona e limpa a sessão
-- [ ] Build passa limpo
-
-**Commit final:**
-```
-feat(backend): auth — Supabase Auth, session management, route protection, password reset
-```
+> Auth backend entregue junto com o M9 no PR #14 (`backend/foundation`).
+> Ver seção M9 acima para detalhes completos das entregas.
 
 ---
 
