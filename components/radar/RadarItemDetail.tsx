@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { RadarTipoBadge, RadarUrgenciaBadge, RadarStatusBadge } from './RadarBadge'
+import { RadarCriarPrazoDialog } from './RadarCriarPrazoDialog'
 import { RADAR_ORIGEM_LABELS, RADAR_URGENCIA_COLORS } from '@/types/radar'
 import type { RadarItem } from '@/types/radar'
 
@@ -84,6 +85,7 @@ interface RadarItemDetailProps {
 export function RadarItemDetail({ item, open, onOpenChange, onResolve }: RadarItemDetailProps) {
   const router = useRouter()
   const [resumoExpanded, setResumoExpanded] = useState(true)
+  const [prazoDialogOpen, setPrazoDialogOpen] = useState(false)
   const [confirmedAction, setConfirmedAction] = useState<string | null>(null)
 
   function flashConfirm(key: string) {
@@ -104,6 +106,10 @@ export function RadarItemDetail({ item, open, onOpenChange, onResolve }: RadarIt
   }
 
   function handleCriarPrazo() {
+    setPrazoDialogOpen(true)
+  }
+
+  function handlePrazoSaved() {
     flashConfirm('prazo')
   }
 
@@ -126,6 +132,7 @@ export function RadarItemDetail({ item, open, onOpenChange, onResolve }: RadarIt
   const urgenciaColor = RADAR_URGENCIA_COLORS[item.urgencia]
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
@@ -380,5 +387,13 @@ export function RadarItemDetail({ item, open, onOpenChange, onResolve }: RadarIt
         </div>
       </SheetContent>
     </Sheet>
+
+    <RadarCriarPrazoDialog
+      open={prazoDialogOpen}
+      onOpenChange={setPrazoDialogOpen}
+      item={item}
+      onSave={handlePrazoSaved}
+    />
+    </>
   )
 }
