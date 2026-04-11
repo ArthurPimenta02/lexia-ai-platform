@@ -19,7 +19,7 @@
 | M3 | Dashboard UI ✅ | `ui/dashboard` | Interface |
 | M4 | Leads UI (Tabela) ✅ | `ui/leads-table` | Interface |
 | M4b | Kanban UI ✅ | `ui/kanban` | Interface |
-| M5 | Casos UI ← **aqui** | `ui/casos` | Interface |
+| M5 | Casos UI ✅ | `ui/casos` | Interface |
 | M6 | Radar UI | `ui/radar` | Interface |
 | M7 | Calendar UI | `ui/calendar` | Interface |
 | M8 | Settings & Users UI | `ui/settings` | Interface |
@@ -277,39 +277,39 @@ feat(ui/leads): tabela de leads, filtros, CRUD e página de detalhe
 #### Entregas
 
 **Dados mock**
-- [ ] Criar `lib/mock/casos.ts` — 8 casos em andamento com campos: título, área jurídica, responsável, cliente, status (ativo/suspenso/encerrado), data de abertura, última movimentação, processos vinculados
-- [ ] Criar `types/caso.ts` — interfaces `Caso`, `CasoStatus`, `ProcessoVinculado`, `DossieData`
+- [x] Criar `lib/mock/casos.ts` — 8 casos em andamento com campos: título, área jurídica, responsável, cliente, status (ativo/suspenso/encerrado), data de abertura, última movimentação, processos vinculados
+- [x] Criar `types/caso.ts` — interfaces `Caso`, `CasoStatus`, `ProcessoVinculado`, `DossieData`
 
 **Lista de Casos**
-- [ ] Criar `components/casos/CasosTable.tsx` — tabela com: título, área, cliente, responsável, status, última movimentação
-- [ ] Criar `components/casos/CasoStatusBadge.tsx` — badge por status
-- [ ] Criar `components/casos/CasoFormDialog.tsx` — criar/editar caso (título, área jurídica, cliente, responsável, observações)
-- [ ] Criar `components/casos/CasosClient.tsx` — state owner com busca e filtros
-- [ ] Criar `app/(dashboard)/casos/page.tsx`
+- [x] Criar `components/casos/CasosTable.tsx` — tabela com: título, área, cliente, responsável, status, última movimentação
+- [x] Criar `components/casos/CasoStatusBadge.tsx` — badge por status
+- [x] Criar `components/casos/CasoFormDialog.tsx` — criar/editar caso (título, área jurídica, cliente, responsável, observações)
+- [x] Criar `components/casos/CasosClient.tsx` — state owner com busca e filtros
+- [x] Criar `app/(dashboard)/casos/page.tsx`
 
 **Página de Detalhe do Caso (Dossiê)**
-- [ ] Criar `app/(dashboard)/casos/[id]/page.tsx` — Server Component com `notFound()` para IDs inválidos
-- [ ] Criar `components/casos/DossieClient.tsx` — layout de duas colunas: conteúdo principal + painel lateral
-- [ ] **Seção: Visão Geral** — dados do caso, responsável, área jurídica, status, datas
-- [ ] **Seção: Linha do Tempo** — eventos cronológicos do caso (audiências, petições, movimentações, marcos)
-- [ ] **Seção: Processos Vinculados** — lista de processos com número, tribunal, última movimentação
-- [ ] **Seção: Próximos Prazos** — lista de prazos ordenados por data
-- [ ] **Seção: Documentos** — lista de documentos (estrutura apenas; upload na Fase 3)
-- [ ] **Painel: Dossiê Inteligente (IA — UI com dados mock)**
-  - [ ] Criar `components/casos/DossieInteligente.tsx` — painel colapsável com:
-    - [ ] Resumo vivo do caso (narrativa consolidada)
-    - [ ] Pontos críticos em aberto
-    - [ ] Pendências identificadas
-    - [ ] Próximos marcos esperados
-    - [ ] Última movimentação relevante
-    - [ ] Contexto consolidado para retomada rápida
-  - [ ] Dados mockados — integração real com Claude na Fase 3
+- [x] Criar `app/(dashboard)/casos/[id]/page.tsx` — Server Component com `notFound()` para IDs inválidos
+- [x] Criar `components/casos/DossieClient.tsx` — layout de duas colunas: conteúdo principal + painel lateral
+- [x] **Seção: Visão Geral** — dados do caso, responsável, área jurídica, status, datas
+- [x] **Seção: Linha do Tempo** — eventos cronológicos do caso (audiências, petições, movimentações, marcos)
+- [x] **Seção: Processos Vinculados** — lista de processos com número, tribunal, última movimentação
+- [x] **Seção: Próximos Prazos** — lista de prazos ordenados por data
+- [x] **Seção: Documentos** — lista de documentos (estrutura apenas; upload na Fase 3)
+- [x] **Painel: Dossiê Inteligente (IA — UI com dados mock)**
+  - [x] Criar `components/casos/DossieInteligente.tsx` — painel colapsável com:
+    - [x] Resumo vivo do caso (narrativa consolidada)
+    - [x] Pontos críticos em aberto
+    - [x] Pendências identificadas
+    - [x] Próximos marcos esperados
+    - [x] Última movimentação relevante
+    - [x] Contexto consolidado para retomada rápida
+  - [x] Dados mockados — integração real com Claude na Fase 3
 
 **Verificação**
-- [ ] Lista de casos renderiza com dados mock sem erros
-- [ ] Filtros e busca funcionam
-- [ ] Página de detalhe carrega com dossiê completo
-- [ ] Dossiê Inteligente exibe dados mock formatados
+- [x] Lista de casos renderiza com dados mock sem erros
+- [x] Filtros e busca funcionam
+- [x] Página de detalhe carrega com dossiê completo
+- [x] Dossiê Inteligente exibe dados mock formatados
 - [ ] Build passa limpo
 
 **Commit final:**
@@ -319,46 +319,49 @@ feat(ui/casos): listagem de casos, dossiê com linha do tempo e painel de IA moc
 
 ---
 
-### M6 · Radar UI
+### M6 · Radar UI ✅
 
-**Branch:** `ui/radar`
+**Branch:** `ui/radar` → mergeado em `main`
 **Objetivo:** Central de monitoramento jurídico — publicações, movimentações processuais, alertas, prazos gerados por movimentações. Cada item tem classificação de urgência e indicação se exige ação.
 
 #### Entregas
 
 **Dados mock**
-- [ ] Criar `lib/mock/radar.ts` — 20 itens de radar: publicações, movimentações, alertas de prazo, com campos: tipo, caso vinculado, cliente, data, urgência, exige ação, resumo IA, próximo passo sugerido
-- [ ] Criar `types/radar.ts` — interfaces `RadarItem`, `RadarTipo`, `RadarUrgencia`
+- [x] Criar `lib/mock/radar.ts` — 20 itens de radar: publicações, movimentações, alertas de prazo, com campos: tipo, caso vinculado, cliente, data, urgência, exige ação, resumo IA, próximo passo sugerido
+- [x] Criar `types/radar.ts` — interfaces `RadarItem`, `RadarTipo`, `RadarUrgencia` (+ `RadarStatus`, `RadarOrigem`, constantes de cor e label)
 
 **Lista do Radar**
-- [ ] Criar `components/radar/RadarList.tsx` — lista com agrupamento por data (hoje, esta semana, anteriores)
-- [ ] Criar `components/radar/RadarCard.tsx` — card com: tipo (badge), caso, cliente, data, urgência (badge colorido), indicador "Exige ação" (ícone destacado)
-- [ ] Criar `components/radar/RadarFilters.tsx` — filtros: tipo, urgência, caso, exige ação
-- [ ] Criar `components/radar/RadarClient.tsx` — state owner
-- [ ] Criar `app/(dashboard)/radar/page.tsx`
+- [x] Criar `components/radar/RadarList.tsx` — lista com agrupamento por data (hoje, esta semana, anteriores)
+- [x] Criar `components/radar/RadarCard.tsx` — card com: tipo (badge), caso, cliente, data, urgência (badge colorido), indicador "Exige ação" (ícone destacado)
+- [x] Criar `components/radar/RadarFilters.tsx` — filtros: tipo, urgência, caso, exige ação + filtro de período
+- [x] Criar `components/radar/RadarClient.tsx` — state owner com `useState<RadarItem[]>` para suportar mutações locais
+- [x] Criar `app/(dashboard)/radar/page.tsx`
 
 **Painel de Detalhe do Item**
-- [ ] Criar `components/radar/RadarItemDetail.tsx` — Sheet lateral que abre ao clicar num item:
-  - [ ] Cabeçalho: tipo, data, caso vinculado
-  - [ ] **Resumo Inteligente (IA — UI com dados mock)**:
-    - [ ] Resumo claro do andamento processual
-    - [ ] Explicação prática do que aconteceu
-    - [ ] Classificação de urgência/prioridade
-    - [ ] Indicação se exige ação e qual
-    - [ ] Sugestão de próximo passo
-  - [ ] Ações rápidas: "Criar prazo", "Atualizar caso", "Marcar como resolvido"
+- [x] Criar `components/radar/RadarItemDetail.tsx` — Sheet lateral que abre ao clicar num item:
+  - [x] Cabeçalho: título → caso vinculado → cliente → metadados → badges (tipo, urgência, status, exige ação)
+  - [x] **Resumo Inteligente (IA — UI com dados mock)**:
+    - [x] Resumo claro do andamento processual
+    - [x] Explicação prática do que aconteceu
+    - [x] Classificação de urgência/prioridade
+    - [x] Indicação se exige ação e qual
+    - [x] Sugestão de próximo passo
+    - [x] Impacto no caso *(adicional)*
+    - [x] Risco se não agir *(adicional)*
+  - [x] Ações rápidas: "Ver caso" (navega), "Criar prazo" (dialog real), "Atualizar caso" (navega), "Adicionar à timeline" (feedback visual), "Marcar como resolvido" (confirm + atualiza state)
+- [x] Criar `components/radar/RadarCriarPrazoDialog.tsx` — dialog com campos: descrição, tipo, data limite, responsável, observações *(adicional)*
+
+**Campos extras em `RadarItem`**
+- [x] `dataResolucao?` — registrada ao marcar como resolvido
+- [x] `referenciaExterna?` — para futura integração com Escavador/Datajud
+- [x] `impactoNoCaso` — exibido no Resumo Inteligente
 
 **Verificação**
-- [ ] Lista renderiza com dados mock, agrupada por data
-- [ ] Filtros funcionam corretamente
-- [ ] Sheet de detalhe abre e exibe Resumo Inteligente mockado
-- [ ] Badges de urgência com cores corretas (vermelho/alto, amarelo/médio, cinza/baixo)
-- [ ] Build passa limpo
-
-**Commit final:**
-```
-feat(ui/radar): central de monitoramento — lista, filtros, painel de detalhe e resumo IA mock
-```
+- [x] Lista renderiza com dados mock, agrupada por data
+- [x] Filtros funcionam corretamente
+- [x] Sheet de detalhe abre e exibe Resumo Inteligente mockado
+- [x] Badges de urgência com cores corretas (vermelho/alto, amarelo/médio, cinza/baixo)
+- [x] Build passa limpo
 
 ---
 
