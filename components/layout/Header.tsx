@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { MobileSidebarTrigger } from './Sidebar'
+import { signOut } from '@/actions/auth'
 
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -75,7 +76,7 @@ export function Header() {
             <DropdownMenuItem>Perfil</DropdownMenuItem>
             <DropdownMenuItem>Configurações</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive">Sair</DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onSelect={() => signOut()}>Sair</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
