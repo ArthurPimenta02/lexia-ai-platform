@@ -365,47 +365,53 @@ feat(ui/casos): listagem de casos, dossiê com linha do tempo e painel de IA moc
 
 ---
 
-### M7 · Calendar UI
+### M7 · Calendar UI ✅
 
-**Branch:** `ui/calendar`
-**Objetivo:** Visualização de calendário com eventos de agendamento, modal de criação e conexão visual com casos e leads.
+**Branch:** `ui/calendar` → mergeado em `main`
+**Objetivo:** Agenda operacional jurídica — compromissos, prazos, audiências, tarefas e lembretes com views mês/semana/dia e integração preparada para Google Calendar.
 
 #### Entregas
 
 **Dados mock**
-- [ ] Criar `lib/mock/appointments.ts` com compromissos de exemplo
-- [ ] Criar `types/appointment.ts` com interface: `Appointment`, `AppointmentStatus`
+- [x] Criar `lib/mock/appointments.ts` — 20 eventos cobrindo todos os tipos, status, prioridades e origens
+- [x] Criar `types/calendar.ts` — interfaces `CalendarEvent`, `CalendarAttendee`, `GoogleEventPayload`; tipos `EventType` (6), `EventStatus` (4, inclui `completed`), `EventPriority`, `EventOrigin`; constantes de config; funções `toGooglePayload()` e `fromGoogleEvent()`
 
-**Calendário**
-- [ ] Instalar `react-big-calendar` ou `@fullcalendar/react` para a view de calendário
-- [ ] Criar `components/calendar/CalendarView.tsx` — views: mês, semana, dia
-- [ ] Toggle entre views no header do calendário
-- [ ] Navegar entre períodos (anterior / próximo)
-- [ ] Cor do evento por status: `scheduled` azul, `confirmed` verde, `cancelled` cinza
+**Calendário custom (sem libs externas)**
+- [x] Criar `components/calendar/MonthView.tsx` — grid 7×6, overflow `+N mais`, allDay destacado, dia atual circulado
+- [x] Criar `components/calendar/WeekView.tsx` — 7 colunas × 7h–21h, allDay strip, eventos posicionados por horário
+- [x] Criar `components/calendar/DayView.tsx` — coluna única, borda colorida lateral por status (classes estáticas Tailwind)
+- [x] Criar `components/calendar/CalendarView.tsx` — roteador de views
+- [x] Toggle entre views (Mês / Semana / Dia) no header
+- [x] Navegar entre períodos (← / Hoje / →)
+- [x] Botão "Hoje" desabilitado e destacado quando período atual já é hoje
+- [x] Filtros rápidos por tipo de evento (chips: Todos / Audiências / Prazos / Reuniões / Tarefas / Lembretes)
+- [x] Cores por status: `scheduled` azul, `confirmed` verde, `completed` verde escuro, `cancelled` cinza
 
-**Cards de evento**
-- [ ] Criar `components/calendar/EventCard.tsx` — título, horário, caso/lead vinculado
-- [ ] Clicar no evento abre modal de detalhes
+**Componentes**
+- [x] Criar `components/calendar/EventPill.tsx` — pill com ícone por tipo, ponto vermelho para prioridade alta
+- [x] Criar `components/calendar/CalendarHeader.tsx` — navegação, toggle de views, filtros, botão Novo Evento
+- [x] Criar `components/calendar/EventDetailModal.tsx` — detalhe completo: status, prioridade, origem, vínculos com botões "Abrir caso" / "Abrir lead", ações marcar como concluído / cancelar / editar
+- [x] Criar `components/calendar/EventCreateModal.tsx` — criação/edição com allDay toggle, vínculos a caso e lead, dark mode corrigido
+- [x] Criar `components/calendar/CalendarClient.tsx` — state owner com barra de status Google Calendar sync
 
-**Modal de detalhes do evento**
-- [ ] Criar `components/calendar/EventDetailModal.tsx` — título, data/hora início e fim, descrição, caso/lead vinculado, status, ações (editar, cancelar)
-
-**Modal de criação de evento**
-- [ ] Criar `components/calendar/EventCreateModal.tsx` — título, data/hora, duração, caso (select), advogado, notas
+**Google Calendar (preparado para Fase 3)**
+- [x] Criar `lib/hooks/useGoogleCalendar.ts` — hook com `fetchEvents`, `pushEvent`, `deleteEvent`, `syncRange`; merge bidirecional por `googleEventId`
+- [x] Barra de status na UI: conectado/desconectado, última sync, botões Sincronizar / Desconectar / Conectar
 
 **Página**
-- [ ] Criar `app/(dashboard)/calendar/page.tsx`
-- [ ] Botão "Novo Agendamento" no header da página
+- [x] Criar `app/(dashboard)/calendar/page.tsx` — Server Component, remove placeholder
 
 **Verificação**
-- [ ] Calendário renderiza eventos nos dias corretos
-- [ ] Modal de criação abre/fecha sem erro
-- [ ] Build passa limpo
-
-**Commit final:**
-```
-feat(ui): calendar — month/week/day views, event cards, create/detail modals
-```
+- [x] Month view renderiza eventos nos dias corretos com pills coloridas
+- [x] Células com muitos eventos exibem `+N mais`
+- [x] Week e Day views posicionam eventos por horário (com clamp para eventos antes das 7h)
+- [x] allDay events em faixa dedicada (week/day) e destacados (month)
+- [x] Navegação ← / Hoje / → funciona nas 3 views
+- [x] Filtros por tipo funcionam
+- [x] EventDetailModal exibe vínculos com botões "Abrir caso" / "Abrir lead"
+- [x] Marcar como concluído e cancelar atualizam state local
+- [x] Dark mode: selects e textarea legíveis
+- [x] Build passa limpo
 
 ---
 
