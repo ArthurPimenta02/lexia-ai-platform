@@ -37,43 +37,42 @@ export function RadarCard({ item, onClick }: RadarCardProps) {
         item.exigeAcao && 'border-l-4 border-l-amber-500'
       )}
     >
-      {/* Exige ação badge */}
-      {item.exigeAcao && (
-        <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">
-          <AlertCircle className="h-2.5 w-2.5" />
-          Ação
-        </span>
-      )}
-
-      <div className="p-4 space-y-3">
-        {/* Row 1: badges */}
-        <div className="flex flex-wrap items-center gap-1.5 pr-16">
+      <div className="p-4 space-y-2.5">
+        {/* Row 1: tipo + urgência (prioridade visual máxima) */}
+        <div className="flex items-center gap-1.5">
           <RadarTipoBadge tipo={item.tipo} />
           <RadarUrgenciaBadge urgencia={item.urgencia} />
-          <RadarStatusBadge status={item.status} className="ml-auto" />
         </div>
 
-        {/* Row 2: title */}
+        {/* Row 2: título */}
         <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug">
           {item.titulo}
         </p>
 
-        {/* Row 3: caso + cliente */}
-        <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-          <BriefcaseBusiness className="h-3.5 w-3.5 shrink-0 mt-px" />
-          <span className="truncate font-medium text-foreground/70">{item.casoTitulo}</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground -mt-1.5">
-          <User className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate">{item.cliente}</span>
+        {/* Row 3: caso + cliente — discretos, mesma linha quando possível */}
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <BriefcaseBusiness className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+            <span className="truncate">{item.casoTitulo}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <User className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+            <span className="truncate">{item.cliente}</span>
+          </div>
         </div>
 
-        {/* Row 4: metadata */}
-        <div className="flex items-center justify-between pt-0.5">
-          <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground uppercase tracking-wide">
-            {RADAR_ORIGEM_LABELS[item.origem]}
+        {/* Row 4: rodapé — status, origem e tempo no mesmo nível, todos discretos */}
+        <div className="flex items-center gap-2 pt-0.5">
+          <RadarStatusBadge status={item.status} />
+          {item.exigeAcao && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">
+              <AlertCircle className="h-2.5 w-2.5" />
+              Exige ação
+            </span>
+          )}
+          <span className="ml-auto text-[11px] text-muted-foreground/70">
+            {RADAR_ORIGEM_LABELS[item.origem]} · {formatRelative(item.data)}
           </span>
-          <span className="text-[11px] text-muted-foreground">{formatRelative(item.data)}</span>
         </div>
       </div>
     </div>

@@ -15,6 +15,7 @@ import {
   Info,
   Zap,
   AlertTriangle,
+  AlertCircle,
   Milestone,
   ShieldAlert,
   BriefcaseBusiness,
@@ -128,46 +129,69 @@ export function RadarItemDetail({ item, open, onOpenChange, onResolve }: RadarIt
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="sm:max-w-2xl overflow-y-auto flex flex-col gap-0 p-0"
+        className="sm:max-w-[720px] overflow-y-auto flex flex-col gap-0 p-0"
       >
-        {/* Header */}
-        <SheetHeader className="p-6 pb-4 border-b border-border/60">
-          <div className="flex flex-wrap items-center gap-1.5 mb-2 pr-8">
-            <RadarTipoBadge tipo={item.tipo} />
-            <RadarUrgenciaBadge urgencia={item.urgencia} />
-            <RadarStatusBadge status={item.status} />
-          </div>
-          <SheetTitle className="text-base leading-snug pr-2">{item.titulo}</SheetTitle>
-          <SheetDescription className="flex flex-col gap-1 mt-1">
-            <span className="flex items-center gap-1.5">
-              <BriefcaseBusiness className="h-3.5 w-3.5 shrink-0" />
+        {/* Header — hierarquia: título → contexto → metadados → badges */}
+        <SheetHeader className="p-6 pb-5 border-b border-border/60 space-y-0 gap-0">
+          {/* Título — maior destaque */}
+          <SheetTitle className="text-lg font-semibold leading-snug pr-10 mb-3">
+            {item.titulo}
+          </SheetTitle>
+
+          {/* Contexto — caso + cliente (SheetDescription para acessibilidade, visualmente oculto) */}
+          <SheetDescription className="sr-only">
+            {item.casoTitulo} — {item.cliente}
+          </SheetDescription>
+
+          {/* Contexto visual — caso + cliente */}
+          <div className="flex flex-col gap-1 mb-4">
+            <span className="flex items-center gap-2 text-sm text-foreground/80">
+              <BriefcaseBusiness className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               {item.casoTitulo}
             </span>
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-2 text-sm text-muted-foreground">
               <User className="h-3.5 w-3.5 shrink-0" />
               {item.cliente}
             </span>
-          </SheetDescription>
+          </div>
 
-          {/* Metadata row */}
-          <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-muted-foreground">
+          {/* Linha de metadados — discretos */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />
+              <Clock className="h-3 w-3" />
               {formatDate(item.data)}
             </span>
-            <span className="inline-flex items-center rounded px-1.5 py-0.5 font-medium bg-muted uppercase tracking-wide">
-              {RADAR_ORIGEM_LABELS[item.origem]}
-            </span>
+            <span className="text-muted-foreground/40">·</span>
+            <span>{RADAR_ORIGEM_LABELS[item.origem]}</span>
             {item.referenciaExterna && (
-              <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
-                <ExternalLink className="h-3 w-3" />
-                {item.referenciaExterna}
-              </span>
+              <>
+                <span className="text-muted-foreground/40">·</span>
+                <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                  <ExternalLink className="h-3 w-3" />
+                  {item.referenciaExterna}
+                </span>
+              </>
             )}
             {item.dataResolucao && (
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                Resolvido em {new Date(item.dataResolucao).toLocaleDateString('pt-BR')}
+              <>
+                <span className="text-muted-foreground/40">·</span>
+                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Resolvido em {new Date(item.dataResolucao).toLocaleDateString('pt-BR')}
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* Badges — tipo, urgência, status em sequência clara */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <RadarTipoBadge tipo={item.tipo} />
+            <RadarUrgenciaBadge urgencia={item.urgencia} />
+            <RadarStatusBadge status={item.status} />
+            {item.exigeAcao && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800">
+                <AlertCircle className="h-3 w-3" />
+                Exige ação
               </span>
             )}
           </div>
