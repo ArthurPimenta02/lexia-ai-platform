@@ -1,7 +1,10 @@
+import { MOCK_EVENTS } from '@/lib/mock/appointments'
+import { CalendarClient } from '@/components/calendar/CalendarClient'
+
 export default function CalendarPage() {
   return (
-    <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-border">
-      <p className="text-sm text-muted-foreground">Calendar — em construção</p>
+    <div className="flex h-full flex-col overflow-hidden">
+      <CalendarClient events={MOCK_EVENTS} />
     </div>
   )
 }
