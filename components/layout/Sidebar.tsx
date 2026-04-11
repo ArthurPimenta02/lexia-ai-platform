@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { LayoutDashboard, Users, Calendar, Settings, UserCog, Menu, ChevronsUpDown, Check, Plus, Building2, Kanban, Radar, BriefcaseBusiness } from 'lucide-react'
+import { LayoutDashboard, Users, Calendar, Settings, Menu, ChevronsUpDown, Check, Plus, Building2, Kanban, Radar, BriefcaseBusiness } from 'lucide-react'
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import {
@@ -24,7 +24,6 @@ const navItems = [
   { href: '/radar', label: 'Radar', icon: Radar },
   { href: '/calendar', label: 'Calendário', icon: Calendar },
   { href: '/settings', label: 'Configurações', icon: Settings },
-  { href: '/users', label: 'Usuários', icon: UserCog },
 ]
 
 // Mock — substituído por dados reais em M8/M9

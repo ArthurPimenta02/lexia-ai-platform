@@ -32,7 +32,7 @@ export default function RootLayout({
         {/* Aplica tema antes da hidratação — evita flash */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-full bg-background text-foreground">
+      <body className="h-full overflow-hidden bg-background text-foreground">
         <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>
