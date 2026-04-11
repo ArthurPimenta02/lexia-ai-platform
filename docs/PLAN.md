@@ -20,9 +20,9 @@
 | M4 | Leads UI (Tabela) ✅ | `ui/leads-table` | Interface |
 | M4b | Kanban UI ✅ | `ui/kanban` | Interface |
 | M5 | Casos UI ✅ | `ui/casos` | Interface |
-| M6 | Radar UI | `ui/radar` | Interface |
-| M7 | Calendar UI | `ui/calendar` | Interface |
-| M8 | Settings & Users UI | `ui/settings` | Interface |
+| M6 | Radar UI ✅ | `ui/radar` | Interface |
+| M7 | Calendar UI ✅ | `ui/calendar` | Interface |
+| M8 | Settings & Users UI ✅ | `ui/settings` | Interface |
 | M9 | Database & Supabase Setup | `backend/database` | Backend |
 | M10 | Auth Backend | `backend/auth` | Backend |
 | M11 | Leads & Kanban Backend | `backend/leads` | Backend |
@@ -415,7 +415,7 @@ feat(ui/casos): listagem de casos, dossiê com linha do tempo e painel de IA moc
 
 ---
 
-### M8 · Settings & Users UI
+### M8 · Settings & Users UI ✅
 
 **Branch:** `ui/settings`
 **Objetivo:** Área de configurações completa com dados do escritório, parâmetros do agente e gestão de usuários.
@@ -423,46 +423,52 @@ feat(ui/casos): listagem de casos, dossiê com linha do tempo e painel de IA moc
 #### Entregas
 
 **Dados mock**
-- [ ] Criar `lib/mock/settings.ts` com dados do escritório e configurações do agente
-- [ ] Criar `lib/mock/users.ts` com lista de usuários de exemplo
-- [ ] Criar `types/user.ts` com interfaces: `User`, `UserRole`, `UserStatus`
+- [x] Criar `lib/mock/settings.ts` com dados do escritório e configurações do agente
+- [x] Criar `lib/mock/users.ts` com lista de usuários de exemplo
+- [x] Criar `types/user.ts` com interfaces: `User`, `UserRole`, `UserStatus`, `UserInvite`
+- [x] Criar `types/settings.ts` com interfaces: `OfficeSettings`, `AgentSettings`, `HandoffRules`, `Integration`
 
 **Layout de Settings**
-- [ ] Criar `app/(dashboard)/settings/layout.tsx` — sidebar interna com seções: Escritório, Agente, Integrações, Usuários
-- [ ] Navegação por seção via URL: `/settings/office`, `/settings/agent`, `/settings/integrations`, `/settings/users`
+- [x] Criar `app/(dashboard)/settings/layout.tsx` — sidebar interna discreta com 4 seções
+- [x] Criar `components/settings/SettingsSidebar.tsx` — nav secundária com ícones e estado ativo via pathname
+- [x] Navegação por seção via URL: `/settings/office`, `/settings/agent`, `/settings/integrations`, `/settings/users`
+- [x] `/settings` → redirect para `/settings/office`; `/users` → redirect para `/settings/users`
 
 **Settings — Escritório**
-- [ ] Criar `app/(dashboard)/settings/office/page.tsx`
-- [ ] Formulário: Nome do escritório, CNPJ, Email de contato, Telefone, Endereço
-- [ ] Botão "Salvar alterações"
+- [x] Criar `app/(dashboard)/settings/office/page.tsx`
+- [x] Criar `components/settings/OfficeForm.tsx` — identidade (nome, displayName, área, timezone, logo placeholder) + contato e endereço completo
+- [x] Validação inline (aria-invalid), feedback de sucesso com timeout
 
 **Settings — Agente**
-- [ ] Criar `app/(dashboard)/settings/agent/page.tsx`
-- [ ] Campos: Horário de atendimento (início/fim por dia), Tom do agente (select: formal, neutro, amigável), Especialidades jurídicas (checkboxes), Mensagem de saudação, Mensagem de encerramento, Mensagem fora do horário
+- [x] Criar `app/(dashboard)/settings/agent/page.tsx`
+- [x] Criar `components/settings/AgentForm.tsx` — 6 blocos em Card: horário de atendimento (toggle/dia + start/end), tom (3 opções visuais), especialidades (chips), mensagens padrão (4 textareas), regras de handoff (keywords, limite mensagens, toggles fallback), canais ativos
 
 **Settings — Integrações**
-- [ ] Criar `app/(dashboard)/settings/integrations/page.tsx`
-- [ ] Cards de integração: WhatsApp, Google Calendar, Escavador, ADVBOX
-- [ ] Toggle on/off por integração
-- [ ] Status badge: Conectado / Desconectado / Em breve
+- [x] Criar `app/(dashboard)/settings/integrations/page.tsx`
+- [x] Criar `components/settings/IntegrationCard.tsx` — card com logo, nome, descrição, status badge, lastSyncAt, toggle, CTA
+- [x] Criar `components/settings/IntegrationsClient.tsx` — grid 2×2 com estado local dos toggles
+- [x] 4 integrações: WhatsApp (conectado), Google Calendar (desconectado), Escavador (em breve), ADVBOX (em breve)
 
 **Settings — Usuários**
-- [ ] Criar `app/(dashboard)/settings/users/page.tsx`
-- [ ] Tabela com: avatar, nome, email, role (badge colorido), status, ações (editar, desativar)
-- [ ] Botão "Convidar usuário"
-- [ ] Criar `components/shared/UserInviteModal.tsx` — email, nome, role (select)
-- [ ] Criar `components/shared/UserEditModal.tsx` — editar role e status
-- [ ] Criar `components/shared/RoleBadge.tsx` — badge com cor por role
+- [x] Criar `app/(dashboard)/settings/users/page.tsx`
+- [x] Criar `components/settings/UsersClient.tsx` — tabela com avatar, nome/email, role badge, status, último acesso, ações (editar, desativar)
+- [x] Seção de convites pendentes/expirados separada abaixo da tabela
+- [x] Busca por nome/email + filtro por role
+- [x] Criar `components/shared/RoleBadge.tsx` — badge com cor por role (admin=azul, manager=roxo, lawyer=verde, secretary=amarelo, viewer=cinza)
+- [x] Criar `components/shared/UserInviteModal.tsx` — dialog: email, nome, role (select) + validação aria-invalid
+- [x] Criar `components/shared/UserEditModal.tsx` — dialog: editar role e status pré-preenchidos
 
 **Verificação**
-- [ ] Navegação entre seções de settings funciona
-- [ ] Tabela de usuários renderiza corretamente
-- [ ] Modais abrem e fecham sem erro
-- [ ] Build passa limpo
+- [x] Navegação entre seções de settings funciona
+- [x] Tabela de usuários renderiza 6 usuários + 2 convites
+- [x] Modais abrem e fecham sem erro
+- [x] `/settings` e `/users` redirecionam corretamente
+- [x] Sem browser-level scroll — scroll contido no painel interno de cada página
+- [x] Build passa limpo sem erros TypeScript
 
 **Commit final:**
 ```
-feat(ui): settings — office form, agent config, integrations panel, user management
+feat(ui/settings): M8 — settings & users UI com escritório, agente, integrações e gestão de equipe
 ```
 
 ---
