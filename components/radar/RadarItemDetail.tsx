@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Sheet,
   SheetContent,
@@ -76,10 +77,46 @@ interface RadarItemDetailProps {
   item: RadarItem | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  onResolve?: (itemId: string) => void
 }
 
-export function RadarItemDetail({ item, open, onOpenChange }: RadarItemDetailProps) {
+export function RadarItemDetail({ item, open, onOpenChange, onResolve }: RadarItemDetailProps) {
+  const router = useRouter()
   const [resumoExpanded, setResumoExpanded] = useState(true)
+  const [confirmedAction, setConfirmedAction] = useState<string | null>(null)
+
+  function flashConfirm(key: string) {
+    setConfirmedAction(key)
+    setTimeout(() => setConfirmedAction(null), 1500)
+  }
+
+  function handleVerCaso() {
+    if (!item) return
+    onOpenChange(false)
+    router.push(`/casos/${item.casoId}`)
+  }
+
+  function handleAtualizarCaso() {
+    if (!item) return
+    onOpenChange(false)
+    router.push(`/casos/${item.casoId}`)
+  }
+
+  function handleCriarPrazo() {
+    flashConfirm('prazo')
+  }
+
+  function handleAdicionarTimeline() {
+    flashConfirm('timeline')
+  }
+
+  function handleMarcarResolvido() {
+    if (!item) return
+    if (confirm(`Marcar "${item.titulo}" como resolvido?`)) {
+      onResolve?.(item.id)
+      onOpenChange(false)
+    }
+  }
 
   if (!item) {
     return <Sheet open={false} onOpenChange={onOpenChange} />
@@ -142,24 +179,51 @@ export function RadarItemDetail({ item, open, onOpenChange }: RadarItemDetailPro
             Ações rápidas
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => {}}>
+            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={handleVerCaso}>
               <ExternalLink className="h-3.5 w-3.5" />
               Ver caso
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => {}}>
-              <CalendarPlus className="h-3.5 w-3.5" />
-              Criar prazo
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                'gap-1.5 h-8 text-xs transition-colors',
+                confirmedAction === 'prazo' && 'text-emerald-700 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/30'
+              )}
+              onClick={handleCriarPrazo}
+            >
+              {confirmedAction === 'prazo' ? (
+                <><CheckCircle2 className="h-3.5 w-3.5" />Prazo registrado</>
+              ) : (
+                <><CalendarPlus className="h-3.5 w-3.5" />Criar prazo</>
+              )}
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => {}}>
+            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={handleAtualizarCaso}>
               <RefreshCw className="h-3.5 w-3.5" />
               Atualizar caso
             </Button>
-            <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs" onClick={() => {}}>
-              <ListPlus className="h-3.5 w-3.5" />
-              Adicionar à timeline
+            <Button
+              variant="outline"
+              size="sm"
+              className={cn(
+                'gap-1.5 h-8 text-xs transition-colors',
+                confirmedAction === 'timeline' && 'text-emerald-700 border-emerald-300 bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:bg-emerald-950/30'
+              )}
+              onClick={handleAdicionarTimeline}
+            >
+              {confirmedAction === 'timeline' ? (
+                <><CheckCircle2 className="h-3.5 w-3.5" />Adicionado</>
+              ) : (
+                <><ListPlus className="h-3.5 w-3.5" />Adicionar à timeline</>
+              )}
             </Button>
             {item.status !== 'resolvido' && (
-              <Button variant="outline" size="sm" className="gap-1.5 h-8 text-xs text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-950/30" onClick={() => {}}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 h-8 text-xs text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-800 dark:hover:bg-emerald-950/30"
+                onClick={handleMarcarResolvido}
+              >
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 Marcar como resolvido
               </Button>

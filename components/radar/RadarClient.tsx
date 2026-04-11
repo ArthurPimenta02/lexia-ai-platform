@@ -5,7 +5,7 @@ import { RadarFilters } from './RadarFilters'
 import { RadarList } from './RadarList'
 import { RadarItemDetail } from './RadarItemDetail'
 import { MOCK_RADAR } from '@/lib/mock/radar'
-import type { RadarItem, RadarTipo, RadarUrgencia } from '@/types/radar'
+import type { RadarItem, RadarStatus, RadarTipo, RadarUrgencia } from '@/types/radar'
 
 const PERIOD_MS: Record<'hoje' | '7dias' | '30dias' | 'tudo', number> = {
   hoje: 86_400_000,
@@ -15,6 +15,7 @@ const PERIOD_MS: Record<'hoje' | '7dias' | '30dias' | 'tudo', number> = {
 }
 
 export function RadarClient() {
+  const [items, setItems] = useState<RadarItem[]>(MOCK_RADAR)
   const [selectedItem, setSelectedItem] = useState<RadarItem | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
 
@@ -27,18 +28,18 @@ export function RadarClient() {
 
   const casosDisponiveis = useMemo(() => {
     const seen = new Map<string, { id: string; titulo: string }>()
-    for (const r of MOCK_RADAR) {
+    for (const r of items) {
       if (!seen.has(r.casoId)) seen.set(r.casoId, { id: r.casoId, titulo: r.casoTitulo })
     }
     return Array.from(seen.values())
-  }, [])
+  }, [items])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
     const maxAge = PERIOD_MS[filterPeriodo]
     const now = Date.now()
 
-    return MOCK_RADAR.filter((r) => {
+    return items.filter((r) => {
       if (q && !r.titulo.toLowerCase().includes(q) && !r.cliente.toLowerCase().includes(q)) return false
       if (filterTipo && r.tipo !== filterTipo) return false
       if (filterUrgencia && r.urgencia !== filterUrgencia) return false
@@ -48,7 +49,7 @@ export function RadarClient() {
       if (maxAge !== Infinity && now - new Date(r.data).getTime() > maxAge) return false
       return true
     })
-  }, [search, filterTipo, filterUrgencia, filterCaso, filterExigeAcao, filterPeriodo])
+  }, [items, search, filterTipo, filterUrgencia, filterCaso, filterExigeAcao, filterPeriodo])
 
   const hasFilters = Boolean(
     search || filterTipo || filterUrgencia || filterCaso || filterExigeAcao !== 'todos' || filterPeriodo !== 'tudo'
@@ -73,6 +74,17 @@ export function RadarClient() {
     if (!open) {
       setTimeout(() => setSelectedItem(null), 300)
     }
+  }
+
+  function handleResolve(itemId: string) {
+    const now = new Date().toISOString()
+    setItems((prev) =>
+      prev.map((r) =>
+        r.id === itemId
+          ? ({ ...r, status: 'resolvido' as RadarStatus, dataResolucao: now, exigeAcao: false })
+          : r
+      )
+    )
   }
 
   return (
@@ -106,6 +118,7 @@ export function RadarClient() {
         item={selectedItem}
         open={sheetOpen}
         onOpenChange={handleSheetOpenChange}
+        onResolve={handleResolve}
       />
     </div>
   )
