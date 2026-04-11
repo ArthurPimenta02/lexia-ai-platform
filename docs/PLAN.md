@@ -476,62 +476,92 @@ feat(ui/settings): M8 — settings & users UI com escritório, agente, integraç
 ## FASE 3 — BACKEND
 
 > Com a UI completa e aprovada, conectamos dados reais substituindo os mocks.
-> Ordem: banco → auth → feature por feature, do core para o periférico.
+> Ordem obrigatória: schema → auth → onboarding → features por domínio.
+>
+> **Decisão arquitetural registrada:** Prisma removido do MVP. O uso de JWT claims customizados
+> (`tenant_id`, `role`) para RLS cria atrito real com o Prisma ORM. Usamos `@supabase/supabase-js`
+> direto com tipos TypeScript gerados do schema. Pode ser revisado após M16 se a complexidade de
+> queries justificar a adição do ORM.
 
 ---
 
 ### M9 · Database & Supabase Setup
 
 **Branch:** `backend/database`
-**Objetivo:** Projeto Supabase criado, schema completo aplicado, RLS ativo em todas as tabelas, Prisma conectado.
+**Objetivo:** Schema completo modelado para a arquitetura real da Lexia — Caso ≠ Processo,
+cliente como entidade própria, OABs dos advogados, campos de sync Escavador/CNJ. RLS ativo.
+Supabase clients prontos para uso no App Router.
+
+#### Contexto arquitetural
+
+- `clients` é uma entidade permanente separada de `leads` (pipeline comercial)
+- `processos` são espelhos de processos externos — têm `external_id`, `external_source`, `cnj_number`, `last_synced_at`, `sync_status`
+- `case_process_links` é a join table N:N entre `casos` e `processos` (um processo pode existir sem caso)
+- `lawyer_oabs` armazena os números de OAB de cada advogado (base para descoberta via Escavador)
+- Sem Prisma — Supabase client direto + tipos TypeScript
 
 #### Entregas
 
-**Supabase**
-- [ ] Criar projeto no Supabase
+**Supabase Setup**
+- [x] Instalar `@supabase/supabase-js` e `@supabase/ssr`
+- [ ] Criar projeto no Supabase Dashboard
 - [ ] Copiar `SUPABASE_URL` e `SUPABASE_ANON_KEY` para `.env.local`
-- [ ] Instalar `@supabase/supabase-js` e `@supabase/ssr`
-- [ ] Criar `lib/supabase/client.ts` — cliente para uso em Client Components
-- [ ] Criar `lib/supabase/server.ts` — cliente para uso em Server Components (via cookies)
+- [x] Criar `lib/supabase/client.ts` — browser client (Client Components + Realtime)
+- [x] Criar `lib/supabase/server.ts` — server client (Server Components, Actions, API routes)
 
-**Migrations SQL**
-- [ ] Criar `supabase/migrations/001_tenants.sql` — tabela `tenants`
-- [ ] Criar `supabase/migrations/002_users.sql` — tabela `users` + enum `role` + enum `status`
-- [ ] Criar `supabase/migrations/003_lead_stages.sql` — tabela `lead_stages`
-- [ ] Criar `supabase/migrations/004_leads.sql` — tabela `leads` + enum `urgency` + enum `origin`
-- [ ] Criar `supabase/migrations/005_casos.sql` — tabela `casos` + enum `caso_status`
-- [ ] Criar `supabase/migrations/006_caso_timeline.sql` — tabela `caso_timeline` (eventos do caso)
-- [ ] Criar `supabase/migrations/007_processos.sql` — tabela `processos` (vinculados a casos)
-- [ ] Criar `supabase/migrations/008_radar_items.sql` — tabela `radar_items` (publicações, movimentações, alertas)
-- [ ] Criar `supabase/migrations/009_appointments.sql` — tabela `appointments`
-- [ ] Criar `supabase/migrations/010_integrations.sql` — tabela `integrations`
-- [ ] Criar `supabase/migrations/011_notifications.sql` — tabela `notifications`
-- [ ] Criar `supabase/migrations/012_agent_logs.sql` — tabela `agent_logs`
-- [ ] Aplicar migrations via Supabase CLI (`supabase db push`)
+**Migrations SQL — Enums e Infraestrutura**
+- [x] `001_enums.sql` — todos os enums do sistema em um lugar:
+  `user_role`, `user_status`, `lead_origin`, `lead_urgency`,
+  `caso_status`, `caso_area`, `timeline_event_type`,
+  `processo_status`, `sync_source`, `sync_status`,
+  `radar_tipo`, `radar_urgencia`, `radar_status`,
+  `appointment_status`, `notification_type`, `integration_type`, `integration_status`
 
-**RLS Policies**
-- [ ] Criar `supabase/migrations/013_rls.sql` com políticas para todas as tabelas
-- [ ] Política base: `tenant_id = (auth.jwt() ->> 'tenant_id')::uuid`
-- [ ] Testar isolamento: usuário de tenant A não enxerga dados do tenant B
+**Migrations SQL — Tabelas Core**
+- [x] `002_tenants.sql` — `tenants` (escritórios): nome, config JSONB, agent_config JSONB, timestamps
+- [x] `003_users.sql` — `users`: vínculo com `auth.users`, tenant_id, role, status, last_sign_in_at
+- [x] `004_lawyer_oabs.sql` — `lawyer_oabs`: user_id, oab_number, oab_state, is_primary, discovery_done
+- [x] `005_clients.sql` — `clients`: nome, cpf, cnpj, email, phone, tenant_id (entidade permanente)
+- [x] `006_lead_stages.sql` — `lead_stages`: nome, cor, ordem, is_default, tenant_id
+- [x] `007_leads.sql` — `leads`: client_id (opcional), stage_id, responsible_id, origin, urgency, ai_triage JSONB
+- [x] `008_lead_messages.sql` — `lead_messages`: lead_id, content, sender_type, is_handoff, metadata JSONB
+- [x] `009_casos.sql` — `casos`: client_id, responsible_id, area, status, numero_interno, dossie_ia JSONB
+- [x] `010_caso_timeline.sql` — `caso_timeline`: caso_id, tipo, titulo, descricao, autor_id, metadata JSONB
+- [x] `011_processos.sql` — `processos`: cnj_number, tribunal, vara, external_id, external_source, sync_status, last_synced_at, payload_raw JSONB
+- [x] `012_case_process_links.sql` — `case_process_links`: caso_id, processo_id, vinculado_em, vinculado_por
+- [x] `013_process_parties.sql` — `process_parties`: processo_id, nome, tipo (autor/réu/advogado), cpf_cnpj, oab
+- [x] `014_process_updates.sql` — `process_updates`: processo_id, tipo, descricao, data_movimentacao, external_id, ai_summary JSONB
+- [x] `015_radar_items.sql` — `radar_items`: tenant_id, caso_id, processo_id, tipo, urgencia, status, origem, ai_summary JSONB, exige_acao
+- [x] `016_appointments.sql` — `appointments`: tenant_id, caso_id (opcional), lead_id (opcional), responsible_id, titulo, status, starts_at, ends_at
+- [x] `017_integrations.sql` — `integrations`: tenant_id, type, status, config JSONB, last_sync_at
+- [x] `018_notifications.sql` — `notifications`: user_id, tenant_id, tipo, titulo, body, read, entity_type, entity_id
+- [x] `019_agent_logs.sql` — `agent_logs`: tenant_id, lead_id, action_type, input JSONB, output JSONB, model, tokens_used
 
-**Prisma**
-- [ ] Instalar Prisma (`prisma`, `@prisma/client`)
-- [ ] Gerar `prisma/schema.prisma` com todos os models
-- [ ] Rodar `prisma db pull` para sincronizar com Supabase
-- [ ] Criar `lib/prisma.ts` — singleton do PrismaClient
+**Migrations SQL — RLS**
+- [x] `020_rls.sql` — políticas RLS para todas as tabelas:
+  - Política base: `tenant_id = (auth.jwt() ->> 'tenant_id')::uuid`
+  - `users`: isolamento por tenant + usuário só vê a si mesmo para dados sensíveis
+  - `processos`: sem tenant_id direto — acesso via `case_process_links` + `casos.tenant_id`
+  - `process_parties` e `process_updates`: acesso via `processos`
+  - `notifications`: isolamento por `user_id`
+
+**Migrations SQL — Auth Hooks e Índices**
+- [x] `021_auth_hooks.sql` — trigger `on_auth_user_created` que popula `users` após signup Supabase
+- [x] `022_indexes.sql` — índices em foreign keys e campos de busca frequente
 
 **Seeds**
-- [ ] Criar `supabase/seed.sql` com 1 tenant, 2 usuários, 6 estágios padrão, 5 leads e 3 casos de exemplo
+- [ ] `supabase/seed.sql` — 1 tenant, 2 usuários (admin + lawyer), 6 estágios padrão, 3 clientes, 5 leads, 2 casos, 2 processos vinculados, 5 radar items
 
 **Verificação**
-- [ ] `prisma db pull` não gera erros
-- [ ] RLS bloqueia acesso sem token
-- [ ] Seeds aplicados com sucesso
-- [ ] Build passa limpo
+- [ ] `supabase db push` aplica todas as migrations sem erro
+- [ ] RLS bloqueia select sem token autenticado
+- [ ] RLS bloqueia acesso entre tenants diferentes
+- [ ] Seeds inseridos com sucesso
+- [ ] Build Next.js passa limpo
 
 **Commit final:**
 ```
-feat(backend): database schema — all tables, RLS policies, Prisma setup, seed data
+feat(backend/database): schema completo — tenants, clients, leads, casos, processos, radar, RLS, auth hooks
 ```
 
 ---
@@ -539,14 +569,65 @@ feat(backend): database schema — all tables, RLS policies, Prisma setup, seed 
 ### M10 · Auth Backend
 
 **Branch:** `backend/auth`
-**Objetivo:** Login real com Supabase Auth, sessão persistente, rotas protegidas por middleware, tenant vinculado ao usuário.
+**Objetivo:** Login real com Supabase Auth, sessão persistente, rotas protegidas por middleware,
+tenant e role no JWT, onboarding real com captura de OAB.
 
 #### Entregas
 
 **Supabase Auth**
-- [ ] Habilitar Auth por email/senha no Supabase Dashboard
-- [ ] Criar `supabase/migrations/014_auth_hooks.sql` — trigger que popula `users` após signup
-- [ ] Configurar custom JWT claims para incluir `tenant_id` e `role`
+- [x] Supabase Auth com email/senha habilitado (configurar no Dashboard)
+- [x] JWT claims customizados — hook no Supabase para injetar `tenant_id` e `role` no token
+- [x] Trigger `on_auth_user_created` (migration 021) cria registro em `users` automaticamente
+
+**Middleware de proteção**
+- [x] `middleware.ts` na raiz:
+  - Rotas `(dashboard)` → redirect para `/login` se sem sessão
+  - `/login`, `/signup` → redirect para `/dashboard` se já autenticado
+  - `/onboarding` → acessível apenas com sessão mas sem tenant completo
+  - Refresh de sessão automático (cookie update)
+
+**Login funcional**
+- [x] `app/(auth)/login/page.tsx` conectado ao Supabase Auth
+- [x] `signInWithPassword()` com tratamento de erro (credencial inválida, email não confirmado)
+- [x] Redirect para `/dashboard` após login bem-sucedido
+
+**Signup**
+- [x] `app/(auth)/signup/page.tsx` conectado ao `signUp()`
+- [x] Cria tenant + usuário admin em sequência (Server Action)
+- [x] Redirect para `/onboarding` após signup
+
+**Logout**
+- [x] Server Action `actions/auth.ts#signOut()`
+- [x] Vinculado ao botão de logout no Header
+
+**Forgot / Reset Password**
+- [x] `forgot-password` chama `resetPasswordForEmail()`
+- [x] `reset-password` page para definir nova senha após clicar no link
+
+**Session no servidor**
+- [x] Server Components leem sessão via `lib/supabase/server.ts`
+- [x] `lib/hooks/useUser.ts` — hook client-side para usuário autenticado
+
+**Onboarding real**
+- [x] `app/(onboarding)/onboarding/page.tsx` conectado ao backend
+- [x] Salva dados do escritório em `tenants`
+- [x] Salva número(s) de OAB em `lawyer_oabs`
+- [x] Marca `tenants.onboarding_completed = true` ao final
+- [ ] (Fase 4) Acionar busca Escavador via OAB após onboarding
+
+**Verificação**
+- [ ] Login com credenciais válidas → dashboard
+- [ ] Acesso direto a `/dashboard` sem auth → `/login`
+- [ ] Logout limpa sessão e redireciona para `/login`
+- [ ] Signup cria tenant + user no banco
+- [ ] Onboarding salva OAB em `lawyer_oabs`
+- [ ] JWT token contém `tenant_id` e `role`
+- [ ] Build passa limpo
+
+**Commit final:**
+```
+feat(backend/auth): Supabase Auth, JWT claims, middleware, login/signup/logout, onboarding com OAB
+```
 
 **Middleware de proteção**
 - [ ] Criar `middleware.ts` na raiz — redireciona `/` e rotas `(dashboard)` para `/login` se não autenticado
