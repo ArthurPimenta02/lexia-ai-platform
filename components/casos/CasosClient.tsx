@@ -1,30 +1,39 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Plus, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CasosTable } from '@/components/casos/CasosTable'
 import { CasoFormDialog } from '@/components/casos/CasoFormDialog'
-import { MOCK_CASOS, AREAS_DISPONIVEIS, STATUS_DISPONIVEIS, RESPONSAVEIS_DISPONIVEIS } from '@/lib/mock/casos'
-import type { Caso, CasoArea, CasoStatus } from '@/types/caso'
+import { createCaso, updateCaso, deleteCaso } from '@/actions/casos'
+import type { CasoSummary, CasoArea, CasoStatus, CasoFormData } from '@/types/caso'
+import { CASO_AREAS, CASO_STATUSES } from '@/types/caso'
 
-export function CasosClient() {
-  const [casos, setCasos] = useState<Caso[]>(MOCK_CASOS)
+interface CasosClientProps {
+  initialCasos: CasoSummary[]
+  users: { id: string; name: string }[]
+}
+
+export function CasosClient({ initialCasos, users }: CasosClientProps) {
+  const router = useRouter()
+  const [casos, setCasos] = useState<CasoSummary[]>(initialCasos)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<CasoStatus | ''>('')
   const [filterArea, setFilterArea] = useState<CasoArea | ''>('')
   const [filterResponsavel, setFilterResponsavel] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
-  const [editTarget, setEditTarget] = useState<Caso | undefined>()
+  const [editTarget, setEditTarget] = useState<CasoSummary | undefined>()
+  const [, startTransition] = useTransition()
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
     return casos.filter((c) => {
-      if (q && !c.titulo.toLowerCase().includes(q) && !c.cliente.toLowerCase().includes(q) && !c.numero?.toLowerCase().includes(q)) return false
+      if (q && !c.titulo.toLowerCase().includes(q) && !c.clienteNome.toLowerCase().includes(q) && !c.numeroInterno?.toLowerCase().includes(q)) return false
       if (filterStatus && c.status !== filterStatus) return false
       if (filterArea && c.area !== filterArea) return false
-      if (filterResponsavel && c.responsavel !== filterResponsavel) return false
+      if (filterResponsavel && c.responsavelId !== filterResponsavel) return false
       return true
     })
   }, [casos, search, filterStatus, filterArea, filterResponsavel])
@@ -38,63 +47,94 @@ export function CasosClient() {
     setFilterResponsavel('')
   }
 
-  function handleCreate(data: { titulo: string; area: CasoArea; status: CasoStatus; cliente: string; responsavel: string; descricao: string; proximaAcao: string }) {
-    const novo: Caso = {
-      id: `caso-${Date.now()}`,
+  async function handleCreate(data: CasoFormData) {
+    // Optimistic insert
+    const optimisticId = `optimistic-${Date.now()}`
+    const responsavel = users.find((u) => u.id === data.responsavelId)
+    const optimistic: CasoSummary = {
+      id: optimisticId,
       titulo: data.titulo,
+      numeroInterno: null,
       area: data.area,
       status: data.status,
-      cliente: data.cliente,
-      responsavel: data.responsavel,
-      advogados: [data.responsavel],
-      descricao: data.descricao || undefined,
-      proximaAcao: data.proximaAcao || undefined,
+      clienteId: '',
+      clienteNome: data.clienteNome,
+      responsavelId: data.responsavelId || null,
+      responsavelNome: responsavel?.name ?? null,
       dataAbertura: new Date().toISOString(),
-      ultimaAtualizacao: new Date().toISOString(),
-      processos: [],
-      prazos: [],
-      pendencias: [],
-      documentos: [],
-      timeline: [
-        {
-          id: `tl-${Date.now()}`,
-          tipo: 'criacao',
-          titulo: 'Caso aberto',
-          descricao: `Caso criado manualmente.`,
-          data: new Date().toISOString(),
-          autor: data.responsavel,
-        },
-      ],
+      updatedAt: new Date().toISOString(),
+      proximaAcao: data.proximaAcao || null,
+      proximaAcaoData: data.proximaAcaoData || null,
+      pendenciasAbertas: 0,
+      processosCount: 0,
     }
-    setCasos((prev) => [novo, ...prev])
+    setCasos((prev) => [optimistic, ...prev])
+
+    startTransition(async () => {
+      const result = await createCaso(data)
+      if ('error' in result) {
+        setCasos((prev) => prev.filter((c) => c.id !== optimisticId))
+        alert(result.error)
+      } else {
+        // Substitui o optimistic pelo ID real — o router.refresh() traz dados atualizados
+        setCasos((prev) => prev.map((c) =>
+          c.id === optimisticId ? { ...c, id: result.id } : c
+        ))
+        router.refresh()
+      }
+    })
   }
 
-  function handleEdit(data: { titulo: string; area: CasoArea; status: CasoStatus; cliente: string; responsavel: string; descricao: string; proximaAcao: string }) {
+  async function handleEdit(data: CasoFormData) {
     if (!editTarget) return
-    setCasos((prev) =>
-      prev.map((c) =>
-        c.id === editTarget.id
-          ? {
-              ...c,
-              titulo: data.titulo,
-              area: data.area,
-              status: data.status,
-              cliente: data.cliente,
-              responsavel: data.responsavel,
-              descricao: data.descricao || undefined,
-              proximaAcao: data.proximaAcao || undefined,
-              ultimaAtualizacao: new Date().toISOString(),
-            }
-          : c
-      )
-    )
+    const id = editTarget.id
+    const responsavel = users.find((u) => u.id === data.responsavelId)
+
+    // Optimistic update
+    setCasos((prev) => prev.map((c) =>
+      c.id === id
+        ? {
+            ...c,
+            titulo: data.titulo,
+            area: data.area,
+            status: data.status,
+            clienteNome: data.clienteNome,
+            responsavelId: data.responsavelId || null,
+            responsavelNome: responsavel?.name ?? null,
+            proximaAcao: data.proximaAcao || null,
+            proximaAcaoData: data.proximaAcaoData || null,
+            updatedAt: new Date().toISOString(),
+          }
+        : c
+    ))
     setEditTarget(undefined)
+
+    startTransition(async () => {
+      const result = await updateCaso(id, data)
+      if ('error' in result) {
+        // Rollback
+        setCasos((prev) => prev.map((c) => c.id === id ? editTarget : c))
+        alert(result.error)
+      } else {
+        router.refresh()
+      }
+    })
   }
 
-  function handleDelete(caso: Caso) {
-    if (confirm(`Excluir o caso "${caso.titulo}"? Esta ação não pode ser desfeita.`)) {
-      setCasos((prev) => prev.filter((c) => c.id !== caso.id))
-    }
+  async function handleDelete(caso: CasoSummary) {
+    if (!confirm(`Excluir o caso "${caso.titulo}"? Esta ação não pode ser desfeita.`)) return
+
+    // Optimistic remove
+    setCasos((prev) => prev.filter((c) => c.id !== caso.id))
+
+    startTransition(async () => {
+      const result = await deleteCaso(caso.id)
+      if ('error' in result) {
+        // Rollback
+        setCasos((prev) => [caso, ...prev])
+        alert(result.error)
+      }
+    })
   }
 
   // Contadores por status para os chips de filtro rápido
@@ -129,7 +169,7 @@ export function CasosClient() {
             className="h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <option value="">Todos os status</option>
-            {STATUS_DISPONIVEIS.map((s) => (
+            {CASO_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {s} ({countByStatus[s] ?? 0})
               </option>
@@ -143,7 +183,7 @@ export function CasosClient() {
             className="h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <option value="">Todas as áreas</option>
-            {AREAS_DISPONIVEIS.map((a) => (
+            {CASO_AREAS.map((a) => (
               <option key={a} value={a}>{a}</option>
             ))}
           </select>
@@ -155,8 +195,8 @@ export function CasosClient() {
             className="h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <option value="">Todos os responsáveis</option>
-            {RESPONSAVEIS_DISPONIVEIS.map((r) => (
-              <option key={r} value={r}>{r}</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>{u.name}</option>
             ))}
           </select>
 
@@ -194,12 +234,14 @@ export function CasosClient() {
       <CasoFormDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
+        users={users}
         onSave={handleCreate}
       />
       <CasoFormDialog
         open={Boolean(editTarget)}
         onOpenChange={(open) => { if (!open) setEditTarget(undefined) }}
         caso={editTarget}
+        users={users}
         onSave={handleEdit}
       />
     </div>

@@ -11,8 +11,10 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { RESPONSAVEIS_DISPONIVEIS } from '@/lib/mock/casos'
 import type { RadarItem } from '@/types/radar'
+
+// Placeholder até Radar backend conectar usuários reais (M13+)
+const RESPONSAVEIS_DISPONIVEIS: string[] = []
 
 type TipoPrazo =
   | 'recursal'

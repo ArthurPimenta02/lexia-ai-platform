@@ -1,4 +1,4 @@
-// ─── Status ──────────────────────────────────────────────────────────────────
+// ── Status & Área ─────────────────────────────────────────────────────────────
 
 export type CasoStatus = 'Ativo' | 'Suspenso' | 'Encerrado' | 'Arquivado'
 
@@ -16,52 +16,46 @@ export type CasoArea =
 
 export type UrgenciaNivel = 'Alta' | 'Média' | 'Baixa'
 
-// ─── Processo Vinculado ───────────────────────────────────────────────────────
+// ── Processo Vinculado ────────────────────────────────────────────────────────
+// Lido de case_process_links → processos (somente leitura no M12)
 
 export interface ProcessoVinculado {
   id: string
-  numero: string           // e.g. "0001234-56.2023.5.02.0001"
-  tribunal: string         // e.g. "TRT 2ª Região"
-  vara: string
-  ultimaMovimentacao: string  // ISO 8601
-  resumoUltimaMovimentacao: string
-  link?: string
+  numero: string           // cnj_number
+  tribunal: string
+  vara: string | null
+  ultimaMovimentacao: string | null  // data_ultima_mov
+  resumoUltimaMovimentacao: string   // assunto ou classe
+  isPrimary: boolean                 // case_process_links.is_primary
 }
 
-// ─── Pendência ────────────────────────────────────────────────────────────────
+// ── Pendência ─────────────────────────────────────────────────────────────────
+// Fonte operacional de tarefas/prazos — tabela caso_pendencias
 
 export interface Pendencia {
   id: string
   descricao: string
-  prazo?: string          // ISO 8601
-  responsavel?: string
+  prazo: string | null     // ISO 8601
+  responsavel: string | null
   urgencia: UrgenciaNivel
   resolvida: boolean
+  createdAt: string
 }
 
-// ─── Prazo ────────────────────────────────────────────────────────────────────
-
-export interface Prazo {
-  id: string
-  descricao: string
-  data: string            // ISO 8601
-  tipo: 'judicial' | 'interno' | 'contratual'
-  urgencia: UrgenciaNivel
-  cumprido: boolean
-}
-
-// ─── Documento ────────────────────────────────────────────────────────────────
+// ── Documento ─────────────────────────────────────────────────────────────────
+// Tabela caso_documentos
 
 export interface Documento {
   id: string
   nome: string
   tipo: 'petição' | 'contrato' | 'procuração' | 'laudo' | 'decisão' | 'outro'
-  tamanho?: string
+  tamanho: string | null
   criadoEm: string        // ISO 8601
   criadoPor: string
 }
 
-// ─── Linha do Tempo ───────────────────────────────────────────────────────────
+// ── Linha do Tempo ────────────────────────────────────────────────────────────
+// Histórico imutável — tabela caso_timeline
 
 export type TimelineEventTipo =
   | 'criacao'
@@ -77,15 +71,15 @@ export interface TimelineEvent {
   id: string
   tipo: TimelineEventTipo
   titulo: string
-  descricao: string
-  data: string            // ISO 8601
-  autor: string
-  processo?: string       // número do processo vinculado, se aplicável
-  urgencia?: UrgenciaNivel
-  metadata?: Record<string, string>
+  descricao: string | null
+  data: string            // ISO 8601 (created_at)
+  autor: string           // autor_nome (denormalizado)
+  urgencia: UrgenciaNivel | null
+  metadata: Record<string, string>
 }
 
-// ─── Dossiê Inteligente (IA) ─────────────────────────────────────────────────
+// ── Dossiê Inteligente (IA) ───────────────────────────────────────────────────
+// Gerado sob demanda pelo Claude, salvo em casos.dossie_ia (JSONB)
 
 export interface DossieInteligente {
   resumo: string
@@ -98,55 +92,99 @@ export interface DossieInteligente {
   geradoEm: string        // ISO 8601
 }
 
-// ─── Caso (entidade principal) ────────────────────────────────────────────────
+// ── Caso (entidade principal) ─────────────────────────────────────────────────
+// Montado a partir de CasoRow + joins
 
 export interface Caso {
   id: string
   titulo: string
-  numero?: string         // número interno do caso, e.g. "2024-TRB-001"
+  numeroInterno: string | null    // numero_interno
   area: CasoArea
   status: CasoStatus
-  cliente: string
-  clienteId?: string      // referência ao lead/cliente
-  responsavel: string
-  responsavelId?: string
-  advogados: string[]     // advogados adicionais
-  descricao?: string
-  observacoes?: string
+  descricao: string | null
+  observacoes: string | null
+
+  // Cliente (sempre real — client_id nunca null)
+  clienteId: string
+  clienteNome: string             // clients.name
+
+  // Responsável principal
+  responsavelId: string | null
+  responsavelNome: string | null  // users.name
 
   // Datas
-  dataAbertura: string    // ISO 8601
-  dataEncerramento?: string
-  ultimaAtualizacao: string
+  dataAbertura: string            // ISO 8601
+  dataEncerramento: string | null
+  updatedAt: string               // updated_at
 
-  // Próxima ação / prazo
-  proximaAcao?: string
-  proximaAcaoData?: string  // ISO 8601
+  // Próxima ação (campo direto em casos)
+  proximaAcao: string | null
+  proximaAcaoData: string | null  // ISO 8601
 
-  // Prazos
-  proximoPrazo?: Prazo
-  prazos: Prazo[]
-
-  // Processos
-  processos: ProcessoVinculado[]
-
-  // Pendências
-  pendencias: Pendencia[]
-
-  // Linha do tempo
+  // Relações (carregadas em getCaso)
   timeline: TimelineEvent[]
-
-  // Documentos
+  processos: ProcessoVinculado[]
+  pendencias: Pendencia[]
   documentos: Documento[]
 
-  // Dossiê IA (opcional — gerado sob demanda)
-  dossieInteligente?: DossieInteligente
+  // Derivado client-side: primeiro caso_pendencias com prazo futuro não resolvido
+  proximoPrazo: Pendencia | null
 
-  // Multi-tenancy (para backend)
-  tenantId?: string
+  // Dossiê IA
+  dossieInteligente: DossieInteligente | null
+  dossieGeradoEm: string | null
 }
 
-// ─── Constantes visuais ───────────────────────────────────────────────────────
+// ── CasoSummary (para listagem) ───────────────────────────────────────────────
+// Versão leve sem relações — usada em getCasos()
+
+export interface CasoSummary {
+  id: string
+  titulo: string
+  numeroInterno: string | null
+  area: CasoArea
+  status: CasoStatus
+  clienteId: string
+  clienteNome: string
+  responsavelId: string | null
+  responsavelNome: string | null
+  dataAbertura: string
+  updatedAt: string
+  proximaAcao: string | null
+  proximaAcaoData: string | null
+  // Contadores derivados (calculados na query)
+  pendenciasAbertas: number
+  processosCount: number
+}
+
+// ── Formulários ───────────────────────────────────────────────────────────────
+
+export interface CasoFormData {
+  titulo: string
+  area: CasoArea
+  status: CasoStatus
+  clienteNome: string        // upsert automático em clients dentro da action
+  responsavelId: string      // UUID do usuário responsável
+  descricao: string
+  proximaAcao: string
+  proximaAcaoData: string    // '' se não definido
+}
+
+export interface PendenciaInput {
+  descricao: string
+  prazo: string | null       // ISO 8601 ou null
+  responsavel: string | null
+  urgencia: UrgenciaNivel
+}
+
+export interface TimelineEventInput {
+  tipo: TimelineEventTipo
+  titulo: string
+  descricao: string
+  urgencia?: UrgenciaNivel
+}
+
+// ── Constantes visuais ────────────────────────────────────────────────────────
 
 export const CASO_STATUS_COLORS: Record<CasoStatus, string> = {
   Ativo:     '#10B981',
@@ -184,3 +222,10 @@ export const TIMELINE_EVENT_LABELS: Record<TimelineEventTipo, string> = {
   audiencia:              'Audiência',
   peticao:                'Petição',
 }
+
+export const CASO_AREAS: CasoArea[] = [
+  'Trabalhista', 'Cível', 'Família', 'Criminal', 'Empresarial',
+  'Tributário', 'Previdenciário', 'Consumidor', 'Imobiliário', 'Ambiental',
+]
+
+export const CASO_STATUSES: CasoStatus[] = ['Ativo', 'Suspenso', 'Encerrado', 'Arquivado']

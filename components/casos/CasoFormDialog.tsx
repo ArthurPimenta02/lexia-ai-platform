@@ -11,37 +11,40 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { AREAS_DISPONIVEIS, RESPONSAVEIS_DISPONIVEIS, STATUS_DISPONIVEIS } from '@/lib/mock/casos'
-import type { Caso, CasoArea, CasoStatus } from '@/types/caso'
+import type { CasoSummary, CasoArea, CasoStatus, CasoFormData } from '@/types/caso'
+import { CASO_AREAS, CASO_STATUSES } from '@/types/caso'
 
 interface FormState {
   titulo: string
   area: CasoArea
   status: CasoStatus
-  cliente: string
-  responsavel: string
+  clienteNome: string
+  responsavelId: string
   descricao: string
   proximaAcao: string
+  proximaAcaoData: string
 }
 
 const DEFAULT_FORM: FormState = {
   titulo: '',
   area: 'Cível',
   status: 'Ativo',
-  cliente: '',
-  responsavel: RESPONSAVEIS_DISPONIVEIS[0],
+  clienteNome: '',
+  responsavelId: '',
   descricao: '',
   proximaAcao: '',
+  proximaAcaoData: '',
 }
 
 interface CasoFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  caso?: Caso
-  onSave: (data: FormState) => void
+  caso?: CasoSummary
+  users: { id: string; name: string }[]
+  onSave: (data: CasoFormData) => void
 }
 
-export function CasoFormDialog({ open, onOpenChange, caso, onSave }: CasoFormDialogProps) {
+export function CasoFormDialog({ open, onOpenChange, caso, users, onSave }: CasoFormDialogProps) {
   const isEdit = Boolean(caso)
   const [form, setForm] = useState<FormState>(DEFAULT_FORM)
   const [submitted, setSubmitted] = useState(false)
@@ -54,16 +57,17 @@ export function CasoFormDialog({ open, onOpenChange, caso, onSave }: CasoFormDia
           titulo: caso.titulo,
           area: caso.area,
           status: caso.status,
-          cliente: caso.cliente,
-          responsavel: caso.responsavel,
-          descricao: caso.descricao ?? '',
+          clienteNome: caso.clienteNome,
+          responsavelId: caso.responsavelId ?? '',
+          descricao: '',
           proximaAcao: caso.proximaAcao ?? '',
+          proximaAcaoData: caso.proximaAcaoData ?? '',
         })
       } else {
-        setForm(DEFAULT_FORM)
+        setForm({ ...DEFAULT_FORM, responsavelId: users[0]?.id ?? '' })
       }
     }
-  }, [open, caso])
+  }, [open, caso, users])
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -72,8 +76,17 @@ export function CasoFormDialog({ open, onOpenChange, caso, onSave }: CasoFormDia
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitted(true)
-    if (!form.titulo.trim() || !form.cliente.trim()) return
-    onSave(form)
+    if (!form.titulo.trim() || !form.clienteNome.trim()) return
+    onSave({
+      titulo: form.titulo,
+      area: form.area,
+      status: form.status,
+      clienteNome: form.clienteNome,
+      responsavelId: form.responsavelId,
+      descricao: form.descricao,
+      proximaAcao: form.proximaAcao,
+      proximaAcaoData: form.proximaAcaoData,
+    })
     onOpenChange(false)
   }
 
@@ -112,13 +125,13 @@ export function CasoFormDialog({ open, onOpenChange, caso, onSave }: CasoFormDia
             </Label>
             <Input
               id="cf-cliente"
-              value={form.cliente}
-              onChange={(e) => set('cliente', e.target.value)}
+              value={form.clienteNome}
+              onChange={(e) => set('clienteNome', e.target.value)}
               placeholder="Nome do cliente ou empresa"
-              aria-invalid={fieldError(form.cliente)}
-              className={fieldError(form.cliente) ? 'border-red-400 focus-visible:ring-red-400' : ''}
+              aria-invalid={fieldError(form.clienteNome)}
+              className={fieldError(form.clienteNome) ? 'border-red-400 focus-visible:ring-red-400' : ''}
             />
-            {fieldError(form.cliente) && (
+            {fieldError(form.clienteNome) && (
               <p className="text-xs text-red-500">Cliente é obrigatório</p>
             )}
           </div>
@@ -133,7 +146,7 @@ export function CasoFormDialog({ open, onOpenChange, caso, onSave }: CasoFormDia
                 onChange={(e) => set('area', e.target.value as CasoArea)}
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
-                {AREAS_DISPONIVEIS.map((a) => (
+                {CASO_AREAS.map((a) => (
                   <option key={a} value={a}>{a}</option>
                 ))}
               </select>
@@ -147,7 +160,7 @@ export function CasoFormDialog({ open, onOpenChange, caso, onSave }: CasoFormDia
                 onChange={(e) => set('status', e.target.value as CasoStatus)}
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
-                {STATUS_DISPONIVEIS.map((s) => (
+                {CASO_STATUSES.map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
@@ -159,12 +172,13 @@ export function CasoFormDialog({ open, onOpenChange, caso, onSave }: CasoFormDia
             <Label htmlFor="cf-responsavel">Responsável</Label>
             <select
               id="cf-responsavel"
-              value={form.responsavel}
-              onChange={(e) => set('responsavel', e.target.value)}
+              value={form.responsavelId}
+              onChange={(e) => set('responsavelId', e.target.value)}
               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
-              {RESPONSAVEIS_DISPONIVEIS.map((r) => (
-                <option key={r} value={r}>{r}</option>
+              <option value="">— Sem responsável —</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>
           </div>
@@ -179,6 +193,19 @@ export function CasoFormDialog({ open, onOpenChange, caso, onSave }: CasoFormDia
               placeholder="Ex: Protocolar réplica à contestação"
             />
           </div>
+
+          {/* Data da próxima ação */}
+          {form.proximaAcao && (
+            <div className="space-y-1.5">
+              <Label htmlFor="cf-proxima-acao-data">Data limite</Label>
+              <Input
+                id="cf-proxima-acao-data"
+                type="date"
+                value={form.proximaAcaoData ? form.proximaAcaoData.substring(0, 10) : ''}
+                onChange={(e) => set('proximaAcaoData', e.target.value ? new Date(e.target.value).toISOString() : '')}
+              />
+            </div>
+          )}
 
           {/* Descrição */}
           <div className="space-y-1.5">

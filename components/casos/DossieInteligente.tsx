@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import {
   ChevronDown,
   ChevronUp,
@@ -15,10 +15,13 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { generateDossie } from '@/actions/ai/dossie'
 import type { DossieInteligente as DossieData } from '@/types/caso'
 
 interface DossieInteligenteProps {
-  dossie: DossieData
+  dossie: DossieData | null
+  casoId: string
+  onDossieGenerated: (dossie: DossieData) => void
 }
 
 interface SectionProps {
@@ -43,23 +46,32 @@ function Section({ icon: Icon, title, iconClass, titleClass, children }: Section
   )
 }
 
-export function DossieInteligente({ dossie }: DossieInteligenteProps) {
+export function DossieInteligente({ dossie, casoId, onDossieGenerated }: DossieInteligenteProps) {
   const [collapsed, setCollapsed] = useState(false)
-  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
 
-  function handleRefresh() {
-    setRefreshing(true)
-    // Simulação — integração real com Claude na Fase 3
-    setTimeout(() => setRefreshing(false), 1800)
+  function handleGenerate() {
+    setError(null)
+    startTransition(async () => {
+      const result = await generateDossie(casoId)
+      if ('error' in result) {
+        setError(result.error)
+      } else {
+        onDossieGenerated(result.dossie)
+      }
+    })
   }
 
-  const geradoEm = new Date(dossie.geradoEm).toLocaleString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const geradoEm = dossie
+    ? new Date(dossie.geradoEm).toLocaleString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null
 
   return (
     <div className="rounded-xl border border-violet-200 dark:border-violet-800/60 bg-gradient-to-b from-violet-50/60 to-white dark:from-violet-950/30 dark:to-card overflow-hidden">
@@ -74,7 +86,7 @@ export function DossieInteligente({ dossie }: DossieInteligenteProps) {
               Dossiê Inteligente
             </span>
             <span className="ml-2 text-xs text-violet-400 dark:text-violet-500 font-normal">
-              por IA · mock
+              por Claude
             </span>
           </div>
         </div>
@@ -83,25 +95,63 @@ export function DossieInteligente({ dossie }: DossieInteligenteProps) {
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-violet-400 hover:text-violet-600 hover:bg-violet-100 dark:text-violet-500 dark:hover:text-violet-300 dark:hover:bg-violet-900/50"
-            onClick={handleRefresh}
-            title="Regenerar dossiê"
+            onClick={handleGenerate}
+            disabled={isPending}
+            title={dossie ? 'Regenerar dossiê' : 'Gerar dossiê'}
           >
-            <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
+            <RefreshCw className={cn('h-3.5 w-3.5', isPending && 'animate-spin')} />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-violet-400 hover:text-violet-600 hover:bg-violet-100 dark:text-violet-500 dark:hover:text-violet-300 dark:hover:bg-violet-900/50"
-            onClick={() => setCollapsed((v) => !v)}
-          >
-            {collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-          </Button>
+          {dossie && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-violet-400 hover:text-violet-600 hover:bg-violet-100 dark:text-violet-500 dark:hover:text-violet-300 dark:hover:bg-violet-900/50"
+              onClick={() => setCollapsed((v) => !v)}
+            >
+              {collapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Body */}
-      {!collapsed && (
+      {/* Sem dossiê ainda */}
+      {!dossie && !isPending && (
+        <div className="px-4 py-6 text-center space-y-3">
+          <p className="text-sm text-violet-700 dark:text-violet-300">
+            Gere um dossiê inteligente para obter uma análise completa deste caso com IA.
+          </p>
+          {error && (
+            <p className="text-xs text-red-500 dark:text-red-400">{error}</p>
+          )}
+          <Button
+            size="sm"
+            className="gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+            onClick={handleGenerate}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Gerar Dossiê
+          </Button>
+        </div>
+      )}
+
+      {/* Gerando... */}
+      {isPending && (
+        <div className="px-4 py-6 text-center space-y-2">
+          <RefreshCw className="h-6 w-6 animate-spin text-violet-500 mx-auto" />
+          <p className="text-sm text-violet-600 dark:text-violet-400">Analisando o caso com IA...</p>
+          <p className="text-xs text-muted-foreground">Isso pode levar alguns segundos</p>
+        </div>
+      )}
+
+      {/* Dossiê gerado */}
+      {dossie && !isPending && !collapsed && (
         <div className="px-4 py-4 space-y-5">
+          {error && (
+            <p className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded px-3 py-2">
+              {error}
+            </p>
+          )}
+
           {/* Resumo */}
           <Section
             icon={Info}
@@ -201,7 +251,7 @@ export function DossieInteligente({ dossie }: DossieInteligenteProps) {
           {/* Footer */}
           <div className="pt-1 flex items-center gap-1.5 text-xs text-violet-400 dark:text-violet-600">
             <Sparkles className="h-3 w-3" />
-            Gerado em {geradoEm} · Integração real com Claude na Fase 3
+            Gerado em {geradoEm} · Claude Sonnet
           </div>
         </div>
       )}

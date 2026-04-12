@@ -1,10 +1,13 @@
+import { getCasos, getUsers } from '@/actions/casos'
 import { CasosClient } from '@/components/casos/CasosClient'
 
 export const metadata = {
   title: 'Casos — Lexia AI',
 }
 
-export default function CasosPage() {
+export default async function CasosPage() {
+  const [casos, users] = await Promise.all([getCasos(), getUsers()])
+
   return (
     <div className="space-y-6">
       <div>
@@ -13,7 +16,7 @@ export default function CasosPage() {
           Operação jurídica — acompanhe todos os casos ativos do escritório
         </p>
       </div>
-      <CasosClient />
+      <CasosClient initialCasos={casos} users={users} />
     </div>
   )
 }

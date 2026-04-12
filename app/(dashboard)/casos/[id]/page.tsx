@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { CASO_BY_ID } from '@/lib/mock/casos'
+import { getCaso, getUsers } from '@/actions/casos'
 import { DossieClient } from '@/components/casos/DossieClient'
 import type { Metadata } from 'next'
 
@@ -9,7 +9,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
-  const caso = CASO_BY_ID[id]
+  const caso = await getCaso(id)
   return {
     title: caso ? `${caso.titulo} — Lexia AI` : 'Caso não encontrado',
   }
@@ -17,9 +17,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CasoDetalhePage({ params }: PageProps) {
   const { id } = await params
-  const caso = CASO_BY_ID[id]
+  const [caso, users] = await Promise.all([getCaso(id), getUsers()])
 
   if (!caso) notFound()
 
-  return <DossieClient caso={caso} />
+  return <DossieClient caso={caso} users={users} />
 }

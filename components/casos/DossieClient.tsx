@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   ArrowLeft,
   ArrowRight,
@@ -17,17 +18,19 @@ import {
   AlertCircle,
   FileText,
   CheckCircle2,
-  XCircle,
   ExternalLink,
   ChevronRight,
+  Send,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { CasoStatusBadge, CasoAreaBadge, UrgenciaBadge } from '@/components/casos/CasoStatusBadge'
 import { DossieInteligente } from '@/components/casos/DossieInteligente'
 import { CasoFormDialog } from '@/components/casos/CasoFormDialog'
 import { cn } from '@/lib/utils'
-import type { Caso, TimelineEvent, TimelineEventTipo, Pendencia, Prazo, ProcessoVinculado, Documento } from '@/types/caso'
+import { updateCaso, updatePendencia, createPendencia, addTimelineEvent } from '@/actions/casos'
+import type { Caso, TimelineEvent, TimelineEventTipo, Pendencia, ProcessoVinculado, Documento, CasoFormData, PendenciaInput, UrgenciaNivel } from '@/types/caso'
 import { TIMELINE_EVENT_LABELS } from '@/types/caso'
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
@@ -51,10 +54,6 @@ function fmtRelative(iso: string) {
   if (days < 7) return `há ${days} dias`
   if (days < 30) return `há ${Math.floor(days / 7)} semanas`
   return `há ${Math.floor(days / 30)} meses`
-}
-
-function daysUntil(iso: string) {
-  return Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000)
 }
 
 // ─── Timeline icon/color ──────────────────────────────────────────────────────
@@ -99,7 +98,7 @@ function SecaoVisaoGeral({ caso }: { caso: Caso }) {
     <SectionCard title="Visão Geral">
       <div className="divide-y divide-border/50">
         <InfoRow label="Cliente">
-          <span className="font-medium">{caso.cliente}</span>
+          <span className="font-medium">{caso.clienteNome}</span>
         </InfoRow>
         <InfoRow label="Área">
           <CasoAreaBadge area={caso.area} />
@@ -110,14 +109,9 @@ function SecaoVisaoGeral({ caso }: { caso: Caso }) {
         <InfoRow label="Responsável">
           <span className="flex items-center gap-1.5">
             <User className="h-3.5 w-3.5 text-muted-foreground" />
-            {caso.responsavel}
+            {caso.responsavelNome ?? '—'}
           </span>
         </InfoRow>
-        {caso.advogados.length > 1 && (
-          <InfoRow label="Equipe">
-            <span className="text-muted-foreground">{caso.advogados.filter(a => a !== caso.responsavel).join(', ')}</span>
-          </InfoRow>
-        )}
         <InfoRow label="Abertura">
           {fmtDate(caso.dataAbertura)}
         </InfoRow>
@@ -127,7 +121,7 @@ function SecaoVisaoGeral({ caso }: { caso: Caso }) {
           </InfoRow>
         )}
         <InfoRow label="Última atualização">
-          <span className="text-muted-foreground">{fmtRelative(caso.ultimaAtualizacao)}</span>
+          <span className="text-muted-foreground">{fmtRelative(caso.updatedAt)}</span>
         </InfoRow>
         {caso.descricao && (
           <InfoRow label="Descrição">
@@ -139,11 +133,41 @@ function SecaoVisaoGeral({ caso }: { caso: Caso }) {
   )
 }
 
-// ─── Seção: Próxima ação + Pendências ─────────────────────────────────────────
+// ─── Seção: Pendências ────────────────────────────────────────────────────────
 
-function SecaoPendencias({ caso }: { caso: Caso }) {
-  const abertas = caso.pendencias.filter((p) => !p.resolvida)
-  const resolvidas = caso.pendencias.filter((p) => p.resolvida)
+interface SecaoPendenciasProps {
+  caso: Caso
+  pendencias: Pendencia[]
+  onResolve: (id: string) => void
+  onAdd: (data: PendenciaInput) => void
+  resolving: Set<string>
+}
+
+function SecaoPendencias({ caso, pendencias, onResolve, onAdd, resolving }: SecaoPendenciasProps) {
+  const [addOpen, setAddOpen] = useState(false)
+  const [newDescricao, setNewDescricao] = useState('')
+  const [newPrazo, setNewPrazo] = useState('')
+  const [newResponsavel, setNewResponsavel] = useState('')
+  const [newUrgencia, setNewUrgencia] = useState<UrgenciaNivel>('Baixa')
+
+  const abertas = pendencias.filter((p) => !p.resolvida)
+  const resolvidas = pendencias.filter((p) => p.resolvida)
+
+  function handleAdd(e: React.FormEvent) {
+    e.preventDefault()
+    if (!newDescricao.trim()) return
+    onAdd({
+      descricao: newDescricao,
+      prazo: newPrazo ? new Date(newPrazo).toISOString() : null,
+      responsavel: newResponsavel || null,
+      urgencia: newUrgencia,
+    })
+    setNewDescricao('')
+    setNewPrazo('')
+    setNewResponsavel('')
+    setNewUrgencia('Baixa')
+    setAddOpen(false)
+  }
 
   return (
     <SectionCard title="Pendências e Próxima Ação">
@@ -169,7 +193,12 @@ function SecaoPendencias({ caso }: { caso: Caso }) {
               Pendências abertas ({abertas.length})
             </p>
             {abertas.map((p) => (
-              <PendenciaItem key={p.id} pendencia={p} />
+              <PendenciaItem
+                key={p.id}
+                pendencia={p}
+                onResolve={() => onResolve(p.id)}
+                resolving={resolving.has(p.id)}
+              />
             ))}
           </div>
         )}
@@ -186,15 +215,88 @@ function SecaoPendencias({ caso }: { caso: Caso }) {
           </div>
         )}
 
-        {caso.pendencias.length === 0 && (
+        {pendencias.length === 0 && !addOpen && (
           <p className="text-sm text-muted-foreground text-center py-2">Nenhuma pendência registrada</p>
+        )}
+
+        {/* Form de nova pendência */}
+        {addOpen && (
+          <form onSubmit={handleAdd} className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Descrição *</Label>
+              <Input
+                value={newDescricao}
+                onChange={(e) => setNewDescricao(e.target.value)}
+                placeholder="Descreva a pendência..."
+                className="h-8 text-sm"
+                autoFocus
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Prazo</Label>
+                <Input
+                  type="date"
+                  value={newPrazo}
+                  onChange={(e) => setNewPrazo(e.target.value)}
+                  className="h-8 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Urgência</Label>
+                <select
+                  value={newUrgencia}
+                  onChange={(e) => setNewUrgencia(e.target.value as UrgenciaNivel)}
+                  className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="Baixa">Baixa</option>
+                  <option value="Média">Média</option>
+                  <option value="Alta">Alta</option>
+                </select>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Responsável</Label>
+              <Input
+                value={newResponsavel}
+                onChange={(e) => setNewResponsavel(e.target.value)}
+                placeholder="Nome do responsável"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button type="button" variant="ghost" size="sm" onClick={() => setAddOpen(false)}>Cancelar</Button>
+              <Button type="submit" size="sm" disabled={!newDescricao.trim()}>Adicionar</Button>
+            </div>
+          </form>
+        )}
+
+        {/* Botão adicionar */}
+        {!addOpen && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-2 text-muted-foreground"
+            onClick={() => setAddOpen(true)}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Adicionar pendência
+          </Button>
         )}
       </div>
     </SectionCard>
   )
 }
 
-function PendenciaItem({ pendencia }: { pendencia: Pendencia }) {
+function PendenciaItem({
+  pendencia,
+  onResolve,
+  resolving,
+}: {
+  pendencia: Pendencia
+  onResolve?: () => void
+  resolving?: boolean
+}) {
   return (
     <div className={cn(
       'flex items-start gap-3 rounded-lg border px-3 py-2.5',
@@ -224,66 +326,18 @@ function PendenciaItem({ pendencia }: { pendencia: Pendencia }) {
           )}
         </div>
       </div>
-    </div>
-  )
-}
-
-// ─── Seção: Prazos ────────────────────────────────────────────────────────────
-
-function SecaoPrazos({ prazos }: { prazos: Prazo[] }) {
-  const sorted = [...prazos].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
-
-  return (
-    <SectionCard title="Próximos Prazos">
-      {sorted.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-2">Nenhum prazo registrado</p>
-      ) : (
-        <div className="space-y-2">
-          {sorted.map((prazo) => {
-            const days = daysUntil(prazo.data)
-            const overdue = days < 0
-            const urgent = days >= 0 && days <= 7
-            return (
-              <div key={prazo.id} className={cn(
-                'flex items-start gap-3 rounded-lg border px-3 py-2.5',
-                prazo.cumprido
-                  ? 'border-green-200 bg-green-50/50 dark:border-green-900/50 dark:bg-green-950/30 opacity-60'
-                  : overdue
-                  ? 'border-red-200 bg-red-50/50 dark:border-red-900/50 dark:bg-red-950/30'
-                  : urgent
-                  ? 'border-orange-200 bg-orange-50/50 dark:border-orange-900/50 dark:bg-orange-950/30'
-                  : 'border-border bg-muted/20'
-              )}>
-                {prazo.cumprido
-                  ? <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
-                  : overdue
-                  ? <XCircle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
-                  : <Clock className={cn('h-4 w-4 shrink-0 mt-0.5', urgent ? 'text-orange-500' : 'text-muted-foreground')} />
-                }
-                <div className="flex-1 min-w-0">
-                  <p className={cn('text-sm', prazo.cumprido && 'line-through text-muted-foreground')}>
-                    {prazo.descricao}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <span className={cn(
-                      'text-xs font-medium',
-                      overdue ? 'text-red-600' : urgent ? 'text-orange-600' : 'text-muted-foreground'
-                    )}>
-                      {fmtDate(prazo.data)}
-                      {!prazo.cumprido && (overdue ? ' — vencido' : days === 0 ? ' — hoje' : days === 1 ? ' — amanhã' : ` — em ${days} dias`)}
-                    </span>
-                    <Badge variant="outline" className="text-xs">
-                      {prazo.tipo}
-                    </Badge>
-                    {!prazo.cumprido && <UrgenciaBadge urgencia={prazo.urgencia} />}
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+      {!pendencia.resolvida && onResolve && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs text-muted-foreground hover:text-green-600"
+          onClick={onResolve}
+          disabled={resolving}
+        >
+          {resolving ? '...' : 'Resolver'}
+        </Button>
       )}
-    </SectionCard>
+    </div>
   )
 }
 
@@ -302,22 +356,23 @@ function SecaoProcessos({ processos }: { processos: ProcessoVinculado[] }) {
                 <div>
                   <p className="text-xs font-mono text-foreground font-medium">{proc.numero}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">{proc.tribunal}</p>
-                  <p className="text-xs text-muted-foreground">{proc.vara}</p>
+                  {proc.vara && <p className="text-xs text-muted-foreground">{proc.vara}</p>}
                 </div>
-                {proc.link && (
-                  <a href={proc.link} target="_blank" rel="noopener noreferrer">
-                    <Button variant="ghost" size="icon" className="h-7 w-7">
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </Button>
-                  </a>
+                {proc.isPrimary && (
+                  <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 px-1.5 py-0.5 rounded font-medium shrink-0">
+                    Principal
+                  </span>
                 )}
               </div>
-              <div className="border-t border-border/50 pt-1.5">
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-medium">Última movimentação:</span>{' '}
-                  {fmtRelative(proc.ultimaMovimentacao)} — {proc.resumoUltimaMovimentacao}
-                </p>
-              </div>
+              {proc.resumoUltimaMovimentacao && (
+                <div className="border-t border-border/50 pt-1.5">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium">Última movimentação:</span>{' '}
+                    {proc.ultimaMovimentacao ? fmtRelative(proc.ultimaMovimentacao) + ' — ' : ''}
+                    {proc.resumoUltimaMovimentacao}
+                  </p>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -354,7 +409,7 @@ function SecaoDocumentos({ documentos }: { documentos: Documento[] }) {
       <div className="mt-3 pt-3 border-t border-border/50">
         <Button variant="outline" size="sm" className="w-full gap-2 text-muted-foreground" disabled>
           <Paperclip className="h-3.5 w-3.5" />
-          Anexar documento (Fase 3)
+          Anexar documento (em breve)
         </Button>
       </div>
     </SectionCard>
@@ -363,8 +418,27 @@ function SecaoDocumentos({ documentos }: { documentos: Documento[] }) {
 
 // ─── Seção: Linha do Tempo ────────────────────────────────────────────────────
 
-function SecaoTimeline({ events }: { events: TimelineEvent[] }) {
+interface SecaoTimelineProps {
+  events: TimelineEvent[]
+  casoId: string
+  onAddNote: (titulo: string, descricao: string) => void
+  addingNote: boolean
+}
+
+function SecaoTimeline({ events, casoId: _casoId, onAddNote, addingNote }: SecaoTimelineProps) {
   const sorted = [...events].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+  const [noteOpen, setNoteOpen] = useState(false)
+  const [noteTitulo, setNoteTitulo] = useState('')
+  const [noteDesc, setNoteDesc] = useState('')
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!noteTitulo.trim()) return
+    onAddNote(noteTitulo, noteDesc)
+    setNoteTitulo('')
+    setNoteDesc('')
+    setNoteOpen(false)
+  }
 
   return (
     <SectionCard title="Linha do Tempo">
@@ -374,15 +448,12 @@ function SecaoTimeline({ events }: { events: TimelineEvent[] }) {
           const isLast = i === sorted.length - 1
           return (
             <div key={event.id} className="flex gap-3 pb-4 relative">
-              {/* Linha vertical */}
               {!isLast && (
                 <div className="absolute left-[15px] top-7 bottom-0 w-px bg-border" />
               )}
-              {/* Ícone */}
               <div className={cn('h-8 w-8 rounded-full shrink-0 flex items-center justify-center z-10', bgClass)}>
                 <Icon className={cn('h-4 w-4', colorClass)} />
               </div>
-              {/* Conteúdo */}
               <div className="flex-1 min-w-0 pt-1">
                 <div className="flex items-start justify-between gap-2 flex-wrap">
                   <div>
@@ -395,23 +466,69 @@ function SecaoTimeline({ events }: { events: TimelineEvent[] }) {
                     {fmtDateTime(event.data)}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{event.descricao}</p>
+                {event.descricao && (
+                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{event.descricao}</p>
+                )}
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   <span className="text-xs text-muted-foreground/70 flex items-center gap-1">
                     <User className="h-3 w-3" />{event.autor}
                   </span>
-                  {event.processo && (
-                    <span className="text-xs font-mono text-muted-foreground/70 flex items-center gap-1">
-                      <Hash className="h-3 w-3" />{event.processo}
-                    </span>
-                  )}
                   {event.urgencia && <UrgenciaBadge urgencia={event.urgencia} />}
                 </div>
               </div>
             </div>
           )
         })}
+
+        {sorted.length === 0 && !noteOpen && (
+          <p className="text-sm text-muted-foreground text-center py-2">Sem eventos na linha do tempo</p>
+        )}
       </div>
+
+      {/* Form de nota interna */}
+      {noteOpen ? (
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Título *</Label>
+            <Input
+              value={noteTitulo}
+              onChange={(e) => setNoteTitulo(e.target.value)}
+              placeholder="Título da nota..."
+              className="h-8 text-sm"
+              autoFocus
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Descrição</Label>
+            <textarea
+              value={noteDesc}
+              onChange={(e) => setNoteDesc(e.target.value)}
+              placeholder="Detalhes da nota interna..."
+              rows={3}
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+            />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setNoteOpen(false)}>Cancelar</Button>
+            <Button type="submit" size="sm" disabled={!noteTitulo.trim() || addingNote} className="gap-1.5">
+              <Send className="h-3.5 w-3.5" />
+              {addingNote ? 'Salvando...' : 'Registrar nota'}
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <div className="mt-4 pt-4 border-t border-border/50">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-2 text-muted-foreground"
+            onClick={() => setNoteOpen(true)}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Adicionar nota interna
+          </Button>
+        </div>
+      )}
     </SectionCard>
   )
 }
@@ -437,9 +554,9 @@ function CasoHeader({ caso, onEdit }: { caso: Caso; onEdit: () => void }) {
           <div className="flex items-center gap-2 flex-wrap">
             <CasoStatusBadge status={caso.status} />
             <CasoAreaBadge area={caso.area} />
-            {caso.numero && (
+            {caso.numeroInterno && (
               <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
-                {caso.numero}
+                {caso.numeroInterno}
               </span>
             )}
           </div>
@@ -448,11 +565,11 @@ function CasoHeader({ caso, onEdit }: { caso: Caso; onEdit: () => void }) {
           <div className="flex items-center gap-4 flex-wrap text-xs text-muted-foreground pt-1">
             <span className="flex items-center gap-1">
               <User className="h-3.5 w-3.5" />
-              {caso.responsavel}
+              {caso.responsavelNome ?? '—'}
             </span>
             <span className="flex items-center gap-1">
               <Building2 className="h-3.5 w-3.5" />
-              {caso.cliente}
+              {caso.clienteNome}
             </span>
             <span className="flex items-center gap-1">
               <Calendar className="h-3.5 w-3.5" />
@@ -460,7 +577,7 @@ function CasoHeader({ caso, onEdit }: { caso: Caso; onEdit: () => void }) {
             </span>
             <span className="flex items-center gap-1">
               <Clock className="h-3.5 w-3.5" />
-              Atualizado {fmtRelative(caso.ultimaAtualizacao)}
+              Atualizado {fmtRelative(caso.updatedAt)}
             </span>
           </div>
         </div>
@@ -472,17 +589,13 @@ function CasoHeader({ caso, onEdit }: { caso: Caso; onEdit: () => void }) {
             Editar
           </Button>
           <Button variant="outline" size="sm" className="gap-2" disabled title="Em breve">
-            <Calendar className="h-3.5 w-3.5" />
-            Adicionar evento
-          </Button>
-          <Button variant="outline" size="sm" className="gap-2" disabled title="Em breve">
             <Paperclip className="h-3.5 w-3.5" />
             Anexar documento
           </Button>
         </div>
       </div>
 
-      {/* Próxima ação em destaque (se houver) */}
+      {/* Próxima ação em destaque */}
       {caso.proximaAcao && (
         <div className="mt-4 pt-4 border-t border-border flex items-center gap-2">
           <ArrowRight className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 shrink-0" />
@@ -503,24 +616,146 @@ function CasoHeader({ caso, onEdit }: { caso: Caso; onEdit: () => void }) {
 
 interface DossieClientProps {
   caso: Caso
+  users: { id: string; name: string }[]
 }
 
-export function DossieClient({ caso: initialCaso }: DossieClientProps) {
+export function DossieClient({ caso: initialCaso, users }: DossieClientProps) {
+  const router = useRouter()
   const [caso, setCaso] = useState<Caso>(initialCaso)
   const [editOpen, setEditOpen] = useState(false)
+  const [resolvingIds, setResolvingIds] = useState<Set<string>>(new Set())
+  const [, startTransition] = useTransition()
+  const [addingNote, setAddingNote] = useState(false)
 
-  function handleEdit(data: { titulo: string; area: Caso['area']; status: Caso['status']; cliente: string; responsavel: string; descricao: string; proximaAcao: string }) {
+  function handleEdit(data: CasoFormData) {
+    const responsavel = users.find((u) => u.id === data.responsavelId)
+    // Optimistic update
     setCaso((prev) => ({
       ...prev,
       titulo: data.titulo,
       area: data.area,
       status: data.status,
-      cliente: data.cliente,
-      responsavel: data.responsavel,
-      descricao: data.descricao || undefined,
-      proximaAcao: data.proximaAcao || undefined,
-      ultimaAtualizacao: new Date().toISOString(),
+      clienteNome: data.clienteNome,
+      responsavelId: data.responsavelId || null,
+      responsavelNome: responsavel?.name ?? null,
+      descricao: data.descricao || null,
+      proximaAcao: data.proximaAcao || null,
+      proximaAcaoData: data.proximaAcaoData || null,
+      updatedAt: new Date().toISOString(),
     }))
+
+    startTransition(async () => {
+      const result = await updateCaso(caso.id, data)
+      if ('error' in result) {
+        setCaso(initialCaso)
+        alert(result.error)
+      } else {
+        router.refresh()
+      }
+    })
+  }
+
+  function handleResolve(pendenciaId: string) {
+    setResolvingIds((prev) => new Set(prev).add(pendenciaId))
+    // Optimistic update
+    setCaso((prev) => ({
+      ...prev,
+      pendencias: prev.pendencias.map((p) =>
+        p.id === pendenciaId ? { ...p, resolvida: true } : p
+      ),
+    }))
+
+    startTransition(async () => {
+      const result = await updatePendencia(pendenciaId, caso.id, true)
+      if ('error' in result) {
+        // Rollback
+        setCaso((prev) => ({
+          ...prev,
+          pendencias: prev.pendencias.map((p) =>
+            p.id === pendenciaId ? { ...p, resolvida: false } : p
+          ),
+        }))
+        alert(result.error)
+      } else {
+        router.refresh()
+      }
+      setResolvingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(pendenciaId)
+        return next
+      })
+    })
+  }
+
+  function handleAddPendencia(data: PendenciaInput) {
+    // Optimistic insert
+    const optimisticId = `opt-${Date.now()}`
+    const optimistic: Pendencia = {
+      id: optimisticId,
+      ...data,
+      resolvida: false,
+      createdAt: new Date().toISOString(),
+    }
+    setCaso((prev) => ({ ...prev, pendencias: [optimistic, ...prev.pendencias] }))
+
+    startTransition(async () => {
+      const result = await createPendencia(caso.id, data)
+      if ('error' in result) {
+        setCaso((prev) => ({
+          ...prev,
+          pendencias: prev.pendencias.filter((p) => p.id !== optimisticId),
+        }))
+        alert(result.error)
+      } else {
+        setCaso((prev) => ({
+          ...prev,
+          pendencias: prev.pendencias.map((p) =>
+            p.id === optimisticId ? { ...p, id: result.id } : p
+          ),
+        }))
+        router.refresh()
+      }
+    })
+  }
+
+  function handleAddNote(titulo: string, descricao: string) {
+    setAddingNote(true)
+    // Optimistic insert
+    const optimisticEvent: TimelineEvent = {
+      id: `opt-${Date.now()}`,
+      tipo: 'nota_interna',
+      titulo,
+      descricao: descricao || null,
+      data: new Date().toISOString(),
+      autor: 'Você',
+      urgencia: null,
+      metadata: {},
+    }
+    setCaso((prev) => ({ ...prev, timeline: [optimisticEvent, ...prev.timeline] }))
+
+    startTransition(async () => {
+      const result = await addTimelineEvent(caso.id, {
+        tipo: 'nota_interna',
+        titulo,
+        descricao,
+      })
+      if ('error' in result) {
+        setCaso((prev) => ({
+          ...prev,
+          timeline: prev.timeline.filter((e) => e.id !== optimisticEvent.id),
+        }))
+        alert(result.error)
+      } else {
+        setCaso((prev) => ({
+          ...prev,
+          timeline: prev.timeline.map((e) =>
+            e.id === optimisticEvent.id ? { ...e, id: result.id } : e
+          ),
+        }))
+        router.refresh()
+      }
+      setAddingNote(false)
+    })
   }
 
   return (
@@ -541,7 +776,12 @@ export function DossieClient({ caso: initialCaso }: DossieClientProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Coluna principal (2/3) */}
         <div className="lg:col-span-2 space-y-6">
-          <SecaoTimeline events={caso.timeline} />
+          <SecaoTimeline
+            events={caso.timeline}
+            casoId={caso.id}
+            onAddNote={handleAddNote}
+            addingNote={addingNote}
+          />
           <SecaoProcessos processos={caso.processos} />
           <SecaoDocumentos documentos={caso.documentos} />
         </div>
@@ -549,13 +789,24 @@ export function DossieClient({ caso: initialCaso }: DossieClientProps) {
         {/* Coluna lateral (1/3) */}
         <div className="space-y-6">
           {/* Dossiê Inteligente */}
-          {caso.dossieInteligente && (
-            <DossieInteligente dossie={caso.dossieInteligente} />
-          )}
+          <DossieInteligente
+            dossie={caso.dossieInteligente}
+            casoId={caso.id}
+            onDossieGenerated={(dossie) => setCaso((prev) => ({
+              ...prev,
+              dossieInteligente: dossie,
+              dossieGeradoEm: dossie.geradoEm,
+            }))}
+          />
 
           <SecaoVisaoGeral caso={caso} />
-          <SecaoPendencias caso={caso} />
-          <SecaoPrazos prazos={caso.prazos} />
+          <SecaoPendencias
+            caso={caso}
+            pendencias={caso.pendencias}
+            onResolve={handleResolve}
+            onAdd={handleAddPendencia}
+            resolving={resolvingIds}
+          />
         </div>
       </div>
 
@@ -563,7 +814,24 @@ export function DossieClient({ caso: initialCaso }: DossieClientProps) {
       <CasoFormDialog
         open={editOpen}
         onOpenChange={setEditOpen}
-        caso={caso}
+        caso={{
+          id: caso.id,
+          titulo: caso.titulo,
+          numeroInterno: caso.numeroInterno,
+          area: caso.area,
+          status: caso.status,
+          clienteId: caso.clienteId,
+          clienteNome: caso.clienteNome,
+          responsavelId: caso.responsavelId,
+          responsavelNome: caso.responsavelNome,
+          dataAbertura: caso.dataAbertura,
+          updatedAt: caso.updatedAt,
+          proximaAcao: caso.proximaAcao,
+          proximaAcaoData: caso.proximaAcaoData,
+          pendenciasAbertas: caso.pendencias.filter((p) => !p.resolvida).length,
+          processosCount: caso.processos.length,
+        }}
+        users={users}
         onSave={handleEdit}
       />
     </div>
