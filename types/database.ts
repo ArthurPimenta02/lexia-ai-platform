@@ -224,6 +224,31 @@ export interface ProcessoRow {
   updated_at: string
 }
 
+export interface CasoPendenciaRow {
+  id: string
+  tenant_id: string
+  caso_id: string
+  descricao: string
+  prazo: string | null
+  responsavel: string | null
+  urgencia: RadarUrgencia
+  resolvida: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface CasoDocumentoRow {
+  id: string
+  tenant_id: string
+  caso_id: string
+  nome: string
+  tipo: string
+  tamanho: string | null
+  storage_path: string | null
+  criado_por: string
+  created_at: string
+}
+
 export interface CaseProcessLinkRow {
   id: string
   tenant_id: string
@@ -394,6 +419,8 @@ export interface Database {
       lead_messages:       TableDef<LeadMessageRow>
       casos:               TableDef<CasoRow>
       caso_timeline:       TableDef<CasoTimelineRow>
+      caso_pendencias:     TableDef<CasoPendenciaRow>
+      caso_documentos:     TableDef<CasoDocumentoRow>
       processos:           TableDef<ProcessoRow>
       case_process_links:  TableDef<CaseProcessLinkRow>
       process_parties:     TableDef<ProcessPartyRow>
