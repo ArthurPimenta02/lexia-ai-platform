@@ -10,8 +10,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { Pencil, Check, Trash2, Clock, AlertCircle } from 'lucide-react'
-import type { KanbanLead, KanbanStage, LegalArea, CaseOrigin } from '@/types/kanban'
-import { KANBAN_COLUMNS } from '@/types/kanban'
+import type { KanbanLead, KanbanColumnConfig, LegalArea } from '@/types/kanban'
+import type { LeadOrigin } from '@/types/database'
 
 interface KanbanDetailDialogProps {
   lead: KanbanLead | null
@@ -19,6 +19,7 @@ interface KanbanDetailDialogProps {
   onOpenChange: (open: boolean) => void
   onSave: (updated: KanbanLead) => void
   onDelete: (id: string) => void
+  stages: KanbanColumnConfig[]
 }
 
 // ─── constants ──────────────────────────────────────────────────────────────
@@ -28,13 +29,12 @@ const LEGAL_AREAS: LegalArea[] = [
   'Empresarial', 'Criminal', 'Imobiliário', 'Tributário',
 ]
 
-const ORIGINS: CaseOrigin[] = [
-  'WhatsApp', 'Instagram', 'Formulário', 'Ligação', 'Indicação', 'LinkedIn',
-]
-
-const RESPONSAVEIS = [
-  'Dr. Lucas Oliveira', 'Dra. Fernanda Lima',
-  'Dra. Renata Souza', 'Dr. Felipe Andrade',
+const ORIGINS: { value: LeadOrigin; label: string }[] = [
+  { value: 'manual',   label: 'Manual' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'web',      label: 'Site / Web' },
+  { value: 'referral', label: 'Indicação' },
+  { value: 'advbox',   label: 'ADVBOX' },
 ]
 
 const PRIORITY_LABEL: Record<KanbanLead['priority'], string> = {
@@ -75,7 +75,7 @@ function formatDateTime(dateStr: string | null): string {
 
 function isUrgent(dateStr: string | null): boolean {
   if (!dateStr) return false
-  const now = new Date('2026-04-10T12:00:00Z')
+  const now = new Date()
   return new Date(dateStr).getTime() - now.getTime() <= 8 * 60 * 60 * 1000
 }
 
@@ -86,8 +86,8 @@ const selectCls =
 
 interface EditableFieldProps {
   label: string
-  display: React.ReactNode          // what's shown in read mode
-  editor: (onDone: () => void) => React.ReactNode  // what renders in edit mode
+  display: React.ReactNode
+  editor: (onDone: () => void) => React.ReactNode
 }
 
 function EditableField({ label, display, editor }: EditableFieldProps) {
@@ -134,6 +134,7 @@ export function KanbanDetailDialog({
   onOpenChange,
   onSave,
   onDelete,
+  stages,
 }: KanbanDetailDialogProps) {
   const [lead, setLead] = useState<KanbanLead | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -157,12 +158,11 @@ export function KanbanDetailDialog({
   }
 
   function handleClose() {
-    // Discard edits on close without save
     onOpenChange(false)
   }
 
-  const stageConfig = KANBAN_COLUMNS.find((c) => c.id === lead.stage)
-  const stageName = stageConfig?.label ?? lead.stage
+  const stageConfig = stages.find((c) => c.id === lead.stageId)
+  const stageName = stageConfig?.label ?? '—'
   const stageColor = stageConfig?.color ?? '#9CA3AF'
   const deadlineUrgent = isUrgent(lead.nextActionDate)
 
@@ -217,10 +217,10 @@ export function KanbanDetailDialog({
                 <select
                   autoFocus
                   className={selectCls}
-                  value={lead.stage}
-                  onChange={(e) => { patch('stage', e.target.value as KanbanStage); done() }}
+                  value={lead.stageId}
+                  onChange={(e) => { patch('stageId', e.target.value); done() }}
                 >
-                  {KANBAN_COLUMNS.map((c) => (
+                  {stages.map((c) => (
                     <option key={c.id} value={c.id}>{c.label}</option>
                   ))}
                 </select>
@@ -240,24 +240,6 @@ export function KanbanDetailDialog({
                 >
                   {LEGAL_AREAS.map((a) => (
                     <option key={a} value={a}>{a}</option>
-                  ))}
-                </select>
-              )}
-            />
-
-            {/* Responsible */}
-            <EditableField
-              label="Responsável"
-              display={<span>{lead.responsible}</span>}
-              editor={(done) => (
-                <select
-                  autoFocus
-                  className={selectCls}
-                  value={lead.responsible}
-                  onChange={(e) => { patch('responsible', e.target.value); done() }}
-                >
-                  {RESPONSAVEIS.map((r) => (
-                    <option key={r} value={r}>{r}</option>
                   ))}
                 </select>
               )}
@@ -317,10 +299,10 @@ export function KanbanDetailDialog({
                   autoFocus
                   className={selectCls}
                   value={lead.origin}
-                  onChange={(e) => { patch('origin', e.target.value as CaseOrigin); done() }}
+                  onChange={(e) => { patch('origin', e.target.value as LeadOrigin); done() }}
                 >
                   {ORIGINS.map((o) => (
-                    <option key={o} value={o}>{o}</option>
+                    <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
               )}

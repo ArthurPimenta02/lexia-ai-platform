@@ -1,69 +1,106 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { Plus, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { MOCK_LEADS } from '@/lib/mock/leads'
+import { createLead, updateLead, deleteLead } from '@/actions/leads'
 import { LeadsTable } from './LeadsTable'
 import { LeadFormDialog } from './LeadFormDialog'
 import { DeleteLeadDialog } from './DeleteLeadDialog'
-import type { Lead, LeadStatus } from '@/types/lead'
+import type { Lead, LeadStage, LeadFormData } from '@/types/lead'
 
-const STATUSES: LeadStatus[] = [
-  'Novo',
-  'Qualificado',
-  'Proposta',
-  'Contrato',
-  'Cliente',
-  'Perdido',
-]
+interface LeadsClientProps {
+  initialLeads: Lead[]
+  stages: LeadStage[]
+}
 
-type FormData = Omit<Lead, 'id' | 'createdAt'>
+export function LeadsClient({ initialLeads, stages }: LeadsClientProps) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
 
-export function LeadsClient() {
-  const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS)
+  const [leads, setLeads] = useState<Lead[]>(initialLeads)
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all')
+  const [stageFilter, setStageFilter] = useState<string>('all')
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Lead | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Lead | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const filtered = leads.filter((lead) => {
     const q = search.toLowerCase()
     const matchesSearch =
-      q === '' ||
-      lead.name.toLowerCase().includes(q) ||
-      lead.company.toLowerCase().includes(q)
-    const matchesStatus =
-      statusFilter === 'all' || lead.status === statusFilter
-    return matchesSearch && matchesStatus
+      q === '' || lead.name.toLowerCase().includes(q)
+    const matchesStage =
+      stageFilter === 'all' || lead.stageId === stageFilter
+    return matchesSearch && matchesStage
   })
 
-  function handleCreate(data: FormData) {
-    const newLead: Lead = {
-      ...data,
-      id: `lead-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    }
-    setLeads((prev) => [newLead, ...prev])
-    setCreateOpen(false)
+  function handleCreate(data: LeadFormData) {
+    setActionError(null)
+    startTransition(async () => {
+      const result = await createLead(data)
+      if ('error' in result) {
+        setActionError(result.error)
+        return
+      }
+      setCreateOpen(false)
+      router.refresh()
+    })
   }
 
-  function handleEdit(data: FormData & { id?: string }) {
+  function handleEdit(data: LeadFormData & { id?: string }) {
     if (!data.id) return
+    setActionError(null)
+
+    // Optimistic update
     setLeads((prev) =>
-      prev.map((l) => (l.id === data.id ? { ...l, ...data } : l))
+      prev.map((l) => {
+        if (l.id !== data.id) return l
+        const stage = stages.find((s) => s.id === data.stageId)
+        return {
+          ...l,
+          ...data,
+          stageName:  stage?.name  ?? l.stageName,
+          stageColor: stage?.color ?? l.stageColor,
+        }
+      })
     )
     setEditTarget(null)
+
+    startTransition(async () => {
+      const result = await updateLead(data.id!, data)
+      if ('error' in result) {
+        setActionError(result.error)
+        // Reverter optimistic update
+        setLeads(initialLeads)
+        return
+      }
+      router.refresh()
+    })
   }
 
   function handleDelete() {
     if (!deleteTarget) return
-    setLeads((prev) => prev.filter((l) => l.id !== deleteTarget.id))
+    setActionError(null)
+    const targetId = deleteTarget.id
+
+    // Optimistic removal
+    setLeads((prev) => prev.filter((l) => l.id !== targetId))
     setDeleteTarget(null)
+
+    startTransition(async () => {
+      const result = await deleteLead(targetId)
+      if ('error' in result) {
+        setActionError(result.error)
+        // Reverter
+        setLeads(initialLeads)
+      }
+      router.refresh()
+    })
   }
 
   const selectClass = cn(
@@ -81,41 +118,46 @@ export function LeadsClient() {
           <div className="relative flex-1 max-w-sm">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Buscar por nome ou empresa…"
+              placeholder="Buscar por nome…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-8"
             />
           </div>
 
-          {/* Status filter */}
+          {/* Stage filter */}
           <select
             className={selectClass}
-            value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value as LeadStatus | 'all')
-            }
-            aria-label="Filtrar por status"
+            value={stageFilter}
+            onChange={(e) => setStageFilter(e.target.value)}
+            aria-label="Filtrar por estágio"
           >
-            <option value="all">Todos os status</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
+            <option value="all">Todos os estágios</option>
+            {stages.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
               </option>
             ))}
           </select>
         </div>
 
-        <Button onClick={() => setCreateOpen(true)}>
+        <Button onClick={() => setCreateOpen(true)} disabled={isPending}>
           <Plus className="h-4 w-4" />
           Novo Lead
         </Button>
       </div>
 
+      {/* Error */}
+      {actionError && (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {actionError}
+        </p>
+      )}
+
       {/* Count */}
       <p className="text-xs text-muted-foreground">
         {filtered.length} {filtered.length === 1 ? 'lead' : 'leads'}
-        {search || statusFilter !== 'all' ? ' encontrado(s)' : ' no total'}
+        {search || stageFilter !== 'all' ? ' encontrado(s)' : ' no total'}
       </p>
 
       {/* Table */}
@@ -129,23 +171,23 @@ export function LeadsClient() {
       <LeadFormDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
+        stages={stages}
         onSubmit={handleCreate}
+        isPending={isPending}
       />
 
       <LeadFormDialog
         open={editTarget !== null}
-        onOpenChange={(o) => {
-          if (!o) setEditTarget(null)
-        }}
+        onOpenChange={(o) => { if (!o) setEditTarget(null) }}
         initialData={editTarget ?? undefined}
+        stages={stages}
         onSubmit={handleEdit}
+        isPending={isPending}
       />
 
       <DeleteLeadDialog
         open={deleteTarget !== null}
-        onOpenChange={(o) => {
-          if (!o) setDeleteTarget(null)
-        }}
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null) }}
         leadName={deleteTarget?.name ?? ''}
         onConfirm={handleDelete}
       />

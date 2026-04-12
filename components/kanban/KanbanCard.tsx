@@ -26,7 +26,7 @@ function getDeadlineStatus(dateStr: string | null): {
   urgent: boolean
 } {
   if (!dateStr) return { label: '', urgent: false }
-  const now = new Date('2026-04-10T12:00:00Z')
+  const now = new Date()
   const date = new Date(dateStr)
   const diffMs = date.getTime() - now.getTime()
   const diffHours = diffMs / (1000 * 60 * 60)
@@ -47,13 +47,15 @@ function getDeadlineStatus(dateStr: string | null): {
 export function KanbanCard({ lead, isDragging, onDragStart, onDragEnd, onClick }: KanbanCardProps) {
   const deadline = getDeadlineStatus(lead.nextActionDate)
 
-  const initials = lead.responsible
-    .replace(/^(Dr\.|Dra\.)\s*/i, '')
-    .split(' ')
-    .slice(0, 2)
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
+  const initials = lead.responsible && lead.responsible !== '—'
+    ? lead.responsible
+        .replace(/^(Dr\.|Dra\.)\s*/i, '')
+        .split(' ')
+        .slice(0, 2)
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+    : '?'
 
   return (
     <div

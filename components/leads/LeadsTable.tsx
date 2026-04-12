@@ -27,9 +27,6 @@ export function LeadsTable({ leads, onEdit, onDelete }: LeadsTableProps) {
             <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Nome
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Empresa
-            </th>
             <th className="hidden px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground md:table-cell">
               E-mail
             </th>
@@ -37,7 +34,7 @@ export function LeadsTable({ leads, onEdit, onDelete }: LeadsTableProps) {
               Telefone
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Status
+              Estágio
             </th>
             <th className="hidden px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground sm:table-cell">
               Criado em
@@ -51,7 +48,7 @@ export function LeadsTable({ leads, onEdit, onDelete }: LeadsTableProps) {
           {leads.length === 0 ? (
             <tr>
               <td
-                colSpan={7}
+                colSpan={6}
                 className="px-4 py-10 text-center text-sm text-muted-foreground"
               >
                 Nenhum lead encontrado.
@@ -71,17 +68,14 @@ export function LeadsTable({ leads, onEdit, onDelete }: LeadsTableProps) {
                     {lead.name}
                   </Link>
                 </td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {lead.company}
-                </td>
                 <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
-                  {lead.email}
+                  {lead.email ?? '—'}
                 </td>
                 <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">
-                  {lead.phone}
+                  {lead.phone ?? '—'}
                 </td>
                 <td className="px-4 py-3">
-                  <StatusBadge status={lead.status} />
+                  <StatusBadge stageName={lead.stageName} stageColor={lead.stageColor} />
                 </td>
                 <td className="hidden px-4 py-3 text-muted-foreground sm:table-cell">
                   {new Date(lead.createdAt).toLocaleDateString('pt-BR')}

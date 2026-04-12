@@ -56,7 +56,7 @@ create policy "tenants: usuário lê o próprio tenant"
 create policy "tenants: admin pode atualizar"
   on tenants for update
   using (id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') = 'admin');
+    and (auth.jwt() ->> 'app_role') = 'admin');
 
 -- Insert permitido somente via service_role (signup flow usa service_role)
 create policy "tenants: service_role pode inserir"

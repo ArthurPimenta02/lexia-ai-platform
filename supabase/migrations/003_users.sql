@@ -45,7 +45,7 @@ create policy "users: admin ou próprio usuário pode atualizar"
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
     and (
       id = auth.uid()
-      or (auth.jwt() ->> 'role') in ('admin', 'manager')
+      or (auth.jwt() ->> 'app_role') in ('admin', 'manager')
     )
   );
 

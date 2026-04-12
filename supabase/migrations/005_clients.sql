@@ -55,19 +55,19 @@ create policy "clients: advogado/secretária/admin inserem"
   on clients for insert
   with check (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer', 'secretary')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer', 'secretary')
   );
 
 create policy "clients: advogado/secretária/admin atualizam"
   on clients for update
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer', 'secretary')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer', 'secretary')
   );
 
 create policy "clients: admin faz soft delete"
   on clients for update
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager')
   );

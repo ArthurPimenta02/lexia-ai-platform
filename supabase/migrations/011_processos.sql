@@ -77,13 +77,13 @@ create policy "processos: advogado/admin inserem"
   on processos for insert
   with check (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer')
   );
 
 create policy "processos: advogado/admin atualizam"
   on processos for update
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer')
   );
 -- Nota: sync via n8n usa service_role

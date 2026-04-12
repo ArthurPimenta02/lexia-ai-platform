@@ -47,5 +47,5 @@ create policy "integrations: admin gerencia"
   on integrations for all
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager')
   );

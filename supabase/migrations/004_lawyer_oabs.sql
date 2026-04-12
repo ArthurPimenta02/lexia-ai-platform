@@ -43,19 +43,19 @@ create policy "lawyer_oabs: admin/manager inserem"
   on lawyer_oabs for insert
   with check (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer')
   );
 
 create policy "lawyer_oabs: admin/manager atualizam"
   on lawyer_oabs for update
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager')
   );
 
 create policy "lawyer_oabs: admin deleta"
   on lawyer_oabs for delete
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') = 'admin'
+    and (auth.jwt() ->> 'app_role') = 'admin'
   );

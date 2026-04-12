@@ -50,19 +50,19 @@ create policy "user_invites: admin/manager lêem do tenant"
   on user_invites for select
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager')
   );
 
 create policy "user_invites: admin/manager inserem"
   on user_invites for insert
   with check (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager')
   );
 
 create policy "user_invites: admin/manager atualizam"
   on user_invites for update
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager')
   );
