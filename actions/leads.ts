@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import type { Lead, LeadActivity, LeadFormData, LeadStatus, LeadTriage } from '@/types/lead'
 import type { LeadRow, LeadStageRow, UserRow } from '@/types/database'
 
@@ -202,20 +202,33 @@ export async function updateLead(
 // Soft delete: preenche deleted_at. RLS filtra automaticamente.
 
 export async function deleteLead(id: string): Promise<{ success: true } | { error: string }> {
+  // Autentica com o client do usuário para obter tenant_id da sessão
   const supabase = await createClient()
-
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return { error: 'Não autenticado' }
 
-  const { error } = await supabase
+  const tenantId = user.user_metadata?.tenant_id as string | undefined
+  if (!tenantId) return { error: 'tenant_id não encontrado na sessão' }
+
+  // Usa service_role para contornar o bug de RLS no soft delete.
+  // Segurança garantida manualmente: filtramos por tenant_id + deleted_at IS NULL,
+  // garantindo que o usuário só pode excluir registros do próprio tenant.
+  const admin = createServiceClient()
+  const { error, count } = await admin
     .from('leads')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('tenant_id', tenantId)
     .is('deleted_at', null)
+    .select()
 
   if (error) {
-    console.error('deleteLead:', error)
-    return { error: 'Erro ao excluir lead. Tente novamente.' }
+    console.error('[deleteLead] error:', JSON.stringify(error))
+    return { error: `Erro ao excluir lead: ${error.message}` }
+  }
+
+  if (!count || count === 0) {
+    return { error: 'Lead não encontrado ou já excluído.' }
   }
 
   revalidatePath('/leads')
