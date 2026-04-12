@@ -112,6 +112,11 @@ function SecaoVisaoGeral({ caso }: { caso: Caso }) {
             {caso.responsavelNome ?? '—'}
           </span>
         </InfoRow>
+        {caso.leadNome && (
+          <InfoRow label="Lead de origem">
+            <span className="text-muted-foreground">{caso.leadNome}</span>
+          </InfoRow>
+        )}
         <InfoRow label="Abertura">
           {fmtDate(caso.dataAbertura)}
         </InfoRow>
@@ -617,9 +622,10 @@ function CasoHeader({ caso, onEdit }: { caso: Caso; onEdit: () => void }) {
 interface DossieClientProps {
   caso: Caso
   users: { id: string; name: string }[]
+  leads: { id: string; name: string }[]
 }
 
-export function DossieClient({ caso: initialCaso, users }: DossieClientProps) {
+export function DossieClient({ caso: initialCaso, users, leads }: DossieClientProps) {
   const router = useRouter()
   const [caso, setCaso] = useState<Caso>(initialCaso)
   const [editOpen, setEditOpen] = useState(false)
@@ -629,6 +635,7 @@ export function DossieClient({ caso: initialCaso, users }: DossieClientProps) {
 
   function handleEdit(data: CasoFormData) {
     const responsavel = users.find((u) => u.id === data.responsavelId)
+    const lead = leads.find((l) => l.id === data.leadId)
     // Optimistic update
     setCaso((prev) => ({
       ...prev,
@@ -638,6 +645,8 @@ export function DossieClient({ caso: initialCaso, users }: DossieClientProps) {
       clienteNome: data.clienteNome,
       responsavelId: data.responsavelId || null,
       responsavelNome: responsavel?.name ?? null,
+      leadId: data.leadId || null,
+      leadNome: lead?.name ?? null,
       descricao: data.descricao || null,
       proximaAcao: data.proximaAcao || null,
       proximaAcaoData: data.proximaAcaoData || null,
@@ -824,6 +833,8 @@ export function DossieClient({ caso: initialCaso, users }: DossieClientProps) {
           clienteNome: caso.clienteNome,
           responsavelId: caso.responsavelId,
           responsavelNome: caso.responsavelNome,
+          leadId: caso.leadId,
+          leadNome: caso.leadNome,
           dataAbertura: caso.dataAbertura,
           updatedAt: caso.updatedAt,
           proximaAcao: caso.proximaAcao,
@@ -832,6 +843,7 @@ export function DossieClient({ caso: initialCaso, users }: DossieClientProps) {
           processosCount: caso.processos.length,
         }}
         users={users}
+        leads={leads}
         onSave={handleEdit}
       />
     </div>

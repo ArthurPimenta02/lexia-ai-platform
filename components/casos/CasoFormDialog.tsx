@@ -20,6 +20,7 @@ interface FormState {
   status: CasoStatus
   clienteNome: string
   responsavelId: string
+  leadId: string
   descricao: string
   proximaAcao: string
   proximaAcaoData: string
@@ -31,6 +32,7 @@ const DEFAULT_FORM: FormState = {
   status: 'Ativo',
   clienteNome: '',
   responsavelId: '',
+  leadId: '',
   descricao: '',
   proximaAcao: '',
   proximaAcaoData: '',
@@ -41,10 +43,11 @@ interface CasoFormDialogProps {
   onOpenChange: (open: boolean) => void
   caso?: CasoSummary
   users: { id: string; name: string }[]
+  leads: { id: string; name: string }[]
   onSave: (data: CasoFormData) => void
 }
 
-export function CasoFormDialog({ open, onOpenChange, caso, users, onSave }: CasoFormDialogProps) {
+export function CasoFormDialog({ open, onOpenChange, caso, users, leads, onSave }: CasoFormDialogProps) {
   const isEdit = Boolean(caso)
   const [form, setForm] = useState<FormState>(DEFAULT_FORM)
   const [submitted, setSubmitted] = useState(false)
@@ -59,6 +62,7 @@ export function CasoFormDialog({ open, onOpenChange, caso, users, onSave }: Caso
           status: caso.status,
           clienteNome: caso.clienteNome,
           responsavelId: caso.responsavelId ?? '',
+          leadId: caso.leadId ?? '',
           descricao: '',
           proximaAcao: caso.proximaAcao ?? '',
           proximaAcaoData: caso.proximaAcaoData ?? '',
@@ -83,6 +87,7 @@ export function CasoFormDialog({ open, onOpenChange, caso, users, onSave }: Caso
       status: form.status,
       clienteNome: form.clienteNome,
       responsavelId: form.responsavelId,
+      leadId: form.leadId,
       descricao: form.descricao,
       proximaAcao: form.proximaAcao,
       proximaAcaoData: form.proximaAcaoData,
@@ -182,6 +187,24 @@ export function CasoFormDialog({ open, onOpenChange, caso, users, onSave }: Caso
               ))}
             </select>
           </div>
+
+          {/* Lead de origem */}
+          {leads.length > 0 && (
+            <div className="space-y-1.5">
+              <Label htmlFor="cf-lead">Lead de origem</Label>
+              <select
+                id="cf-lead"
+                value={form.leadId}
+                onChange={(e) => set('leadId', e.target.value)}
+                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="">— Sem lead vinculado —</option>
+                {leads.map((l) => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Próxima ação */}
           <div className="space-y-1.5">

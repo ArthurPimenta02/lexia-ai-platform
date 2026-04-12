@@ -117,6 +117,10 @@ export interface Caso {
   dataEncerramento: string | null
   updatedAt: string               // updated_at
 
+  // Lead de origem (opcional)
+  leadId: string | null
+  leadNome: string | null         // leads.name (denormalizado para exibição)
+
   // Próxima ação (campo direto em casos)
   proximaAcao: string | null
   proximaAcaoData: string | null  // ISO 8601
@@ -148,6 +152,8 @@ export interface CasoSummary {
   clienteNome: string
   responsavelId: string | null
   responsavelNome: string | null
+  leadId: string | null
+  leadNome: string | null
   dataAbertura: string
   updatedAt: string
   proximaAcao: string | null
@@ -165,6 +171,7 @@ export interface CasoFormData {
   status: CasoStatus
   clienteNome: string        // upsert automático em clients dentro da action
   responsavelId: string      // UUID do usuário responsável
+  leadId: string             // UUID do lead de origem, '' se nenhum
   descricao: string
   proximaAcao: string
   proximaAcaoData: string    // '' se não definido
