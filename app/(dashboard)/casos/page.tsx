@@ -1,4 +1,4 @@
-import { getCasos, getUsers } from '@/actions/casos'
+import { getCasos, getUsers, getLeadsSummary } from '@/actions/casos'
 import { CasosClient } from '@/components/casos/CasosClient'
 
 export const metadata = {
@@ -6,7 +6,7 @@ export const metadata = {
 }
 
 export default async function CasosPage() {
-  const [casos, users] = await Promise.all([getCasos(), getUsers()])
+  const [casos, users, leads] = await Promise.all([getCasos(), getUsers(), getLeadsSummary()])
 
   return (
     <div className="space-y-6">
@@ -16,7 +16,7 @@ export default async function CasosPage() {
           Operação jurídica — acompanhe todos os casos ativos do escritório
         </p>
       </div>
-      <CasosClient initialCasos={casos} users={users} />
+      <CasosClient initialCasos={casos} users={users} leads={leads} />
     </div>
   )
 }

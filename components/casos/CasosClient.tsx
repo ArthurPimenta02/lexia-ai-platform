@@ -14,9 +14,10 @@ import { CASO_AREAS, CASO_STATUSES } from '@/types/caso'
 interface CasosClientProps {
   initialCasos: CasoSummary[]
   users: { id: string; name: string }[]
+  leads: { id: string; name: string }[]
 }
 
-export function CasosClient({ initialCasos, users }: CasosClientProps) {
+export function CasosClient({ initialCasos, users, leads }: CasosClientProps) {
   const router = useRouter()
   const [casos, setCasos] = useState<CasoSummary[]>(initialCasos)
   const [search, setSearch] = useState('')
@@ -51,6 +52,7 @@ export function CasosClient({ initialCasos, users }: CasosClientProps) {
     // Optimistic insert
     const optimisticId = `optimistic-${Date.now()}`
     const responsavel = users.find((u) => u.id === data.responsavelId)
+    const lead = leads.find((l) => l.id === data.leadId)
     const optimistic: CasoSummary = {
       id: optimisticId,
       titulo: data.titulo,
@@ -61,6 +63,8 @@ export function CasosClient({ initialCasos, users }: CasosClientProps) {
       clienteNome: data.clienteNome,
       responsavelId: data.responsavelId || null,
       responsavelNome: responsavel?.name ?? null,
+      leadId: data.leadId || null,
+      leadNome: lead?.name ?? null,
       dataAbertura: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       proximaAcao: data.proximaAcao || null,
@@ -90,6 +94,7 @@ export function CasosClient({ initialCasos, users }: CasosClientProps) {
     const id = editTarget.id
     const responsavel = users.find((u) => u.id === data.responsavelId)
 
+    const lead = leads.find((l) => l.id === data.leadId)
     // Optimistic update
     setCasos((prev) => prev.map((c) =>
       c.id === id
@@ -101,6 +106,8 @@ export function CasosClient({ initialCasos, users }: CasosClientProps) {
             clienteNome: data.clienteNome,
             responsavelId: data.responsavelId || null,
             responsavelNome: responsavel?.name ?? null,
+            leadId: data.leadId || null,
+            leadNome: lead?.name ?? null,
             proximaAcao: data.proximaAcao || null,
             proximaAcaoData: data.proximaAcaoData || null,
             updatedAt: new Date().toISOString(),
@@ -133,6 +140,8 @@ export function CasosClient({ initialCasos, users }: CasosClientProps) {
         // Rollback
         setCasos((prev) => [caso, ...prev])
         alert(result.error)
+      } else {
+        router.refresh()
       }
     })
   }
@@ -235,6 +244,7 @@ export function CasosClient({ initialCasos, users }: CasosClientProps) {
         open={createOpen}
         onOpenChange={setCreateOpen}
         users={users}
+        leads={leads}
         onSave={handleCreate}
       />
       <CasoFormDialog
@@ -242,6 +252,7 @@ export function CasosClient({ initialCasos, users }: CasosClientProps) {
         onOpenChange={(open) => { if (!open) setEditTarget(undefined) }}
         caso={editTarget}
         users={users}
+        leads={leads}
         onSave={handleEdit}
       />
     </div>

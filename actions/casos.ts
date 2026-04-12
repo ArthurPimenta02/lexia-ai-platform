@@ -56,23 +56,26 @@ export async function getCasos(filters: CasoFilters = {}): Promise<CasoSummary[]
     status: string
     client_id: string
     responsible_id: string | null
+    lead_id: string | null
     proxima_acao: string | null
     proxima_acao_data: string | null
     data_abertura: string
     updated_at: string
     clients: Pick<ClientRow, 'id' | 'name'> | null
     users: Pick<UserRow, 'id' | 'name'> | null
+    leads: Pick<{ id: string; name: string }, 'id' | 'name'> | null
   }
 
   let query = supabase
     .from('casos')
     .select(`
       id, titulo, numero_interno, area, status,
-      client_id, responsible_id,
+      client_id, responsible_id, lead_id,
       proxima_acao, proxima_acao_data,
       data_abertura, updated_at,
       clients!client_id ( id, name ),
-      users:responsible_id ( id, name )
+      users:responsible_id ( id, name ),
+      leads:lead_id ( id, name )
     `)
     .is('deleted_at', null)
     .order('updated_at', { ascending: false })
@@ -133,6 +136,8 @@ export async function getCasos(filters: CasoFilters = {}): Promise<CasoSummary[]
     clienteNome: row.clients?.name ?? '—',
     responsavelId: row.responsible_id ?? null,
     responsavelNome: row.users?.name ?? null,
+    leadId: row.lead_id ?? null,
+    leadNome: row.leads?.name ?? null,
     dataAbertura: row.data_abertura,
     updatedAt: row.updated_at,
     proximaAcao: row.proxima_acao ?? null,
@@ -161,6 +166,7 @@ export async function getCaso(id: string): Promise<Caso | null> {
     observacoes: string | null
     client_id: string
     responsible_id: string | null
+    lead_id: string | null
     proxima_acao: string | null
     proxima_acao_data: string | null
     dossie_ia: Record<string, unknown> | null
@@ -170,18 +176,20 @@ export async function getCaso(id: string): Promise<Caso | null> {
     updated_at: string
     clients: Pick<ClientRow, 'id' | 'name'> | null
     users: Pick<UserRow, 'id' | 'name'> | null
+    leads: Pick<{ id: string; name: string }, 'id' | 'name'> | null
   }
 
   const { data, error } = await supabase
     .from('casos')
     .select(`
       id, titulo, numero_interno, area, status, descricao, observacoes,
-      client_id, responsible_id,
+      client_id, responsible_id, lead_id,
       proxima_acao, proxima_acao_data,
       dossie_ia, dossie_gerado_em,
       data_abertura, data_encerramento, updated_at,
       clients!client_id ( id, name ),
-      users:responsible_id ( id, name )
+      users:responsible_id ( id, name ),
+      leads:lead_id ( id, name )
     `)
     .eq('id', id)
     .is('deleted_at', null)
@@ -298,6 +306,8 @@ export async function getCaso(id: string): Promise<Caso | null> {
     clienteNome: row.clients?.name ?? '—',
     responsavelId: row.responsible_id ?? null,
     responsavelNome: row.users?.name ?? null,
+    leadId: row.lead_id ?? null,
+    leadNome: row.leads?.name ?? null,
     dataAbertura: row.data_abertura,
     dataEncerramento: row.data_encerramento ?? null,
     updatedAt: row.updated_at,
@@ -365,6 +375,7 @@ export async function createCaso(
       tenant_id: tenantId,
       client_id: clientId,
       responsible_id: data.responsavelId || null,
+      lead_id: data.leadId || null,
       titulo: data.titulo.trim(),
       area: data.area,
       status: data.status,
@@ -457,6 +468,7 @@ export async function updateCaso(
   if (data.proximaAcao !== undefined) patch.proxima_acao     = data.proximaAcao.trim() || null
   if (data.proximaAcaoData !== undefined) patch.proxima_acao_data = data.proximaAcaoData || null
   if (data.responsavelId   !== undefined) patch.responsible_id    = data.responsavelId || null
+  if (data.leadId      !== undefined) patch.lead_id          = data.leadId || null
   if (clientId         !== undefined) patch.client_id        = clientId
 
   const { error } = await supabase
@@ -636,4 +648,24 @@ export async function getUsers(): Promise<{ id: string; name: string }[]> {
   if (error) throw new Error(`Erro ao buscar usuários: ${error.message}`)
 
   return ((data ?? []) as { id: string; name: string }[]).map((u) => ({ id: u.id, name: u.name }))
+}
+
+// ── getLeadsSummary ───────────────────────────────────────────────────────────
+// Lista leads ativos do tenant para o select de vínculo em Casos.
+
+export async function getLeadsSummary(): Promise<{ id: string; name: string }[]> {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) throw new Error('Não autenticado')
+
+  const { data, error } = await supabase
+    .from('leads')
+    .select('id, name')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(`Erro ao buscar leads: ${error.message}`)
+
+  return ((data ?? []) as { id: string; name: string }[]).map((l) => ({ id: l.id, name: l.name }))
 }
