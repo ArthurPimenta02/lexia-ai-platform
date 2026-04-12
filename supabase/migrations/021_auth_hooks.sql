@@ -46,9 +46,15 @@ create trigger on_auth_user_created
 
 
 -- ── Função: custom JWT claims ─────────────────────────────────────────────────
--- Injeta tenant_id e role no JWT do Supabase.
+-- Injeta tenant_id e app_role no JWT do Supabase.
 -- Configurar em: Dashboard → Authentication → Hooks → Custom JWT Claims
 -- Hook type: "Customize Access Token"
+--
+-- IMPORTANTE: usar `app_role`, NÃO `role`.
+-- O claim `role` é reservado pelo Supabase/PostgREST para papéis de banco.
+-- Injetar um valor de aplicação em `role` causa o erro:
+--   role "admin" does not exist
+-- As políticas RLS devem ler: auth.jwt() ->> 'app_role'
 create or replace function custom_jwt_claims(event jsonb)
 returns jsonb
 security definer
@@ -63,7 +69,7 @@ begin
   claims    := event -> 'claims';
   v_user_id := (event ->> 'user_id')::uuid;
 
-  -- Busca tenant_id e role do usuário
+  -- Busca tenant_id e role (cargo) do usuário
   select tenant_id, role
   into v_record
   from public.users
@@ -73,7 +79,8 @@ begin
 
   if found then
     claims := jsonb_set(claims, '{tenant_id}', to_jsonb(v_record.tenant_id::text));
-    claims := jsonb_set(claims, '{role}',      to_jsonb(v_record.role::text));
+    -- Injeta como `app_role` — nunca como `role` (reservado ao PostgREST)
+    claims := jsonb_set(claims, '{app_role}',  to_jsonb(v_record.role::text));
   end if;
 
   return claims;
@@ -83,7 +90,7 @@ $$;
 
 -- ── Função: soft delete cascata para auth.users ───────────────────────────────
 -- Quando um usuário é desativado (status = 'inactive'), não remove do auth —
--- apenas bloqueia o acesso via JWT claims (role check nas policies).
+-- apenas bloqueia o acesso via JWT claims (app_role check nas policies).
 -- Para remoção real, usar Supabase Admin API.
 create or replace function handle_user_deactivated()
 returns trigger

@@ -24,7 +24,7 @@
 | M7 | Calendar UI ✅ | `ui/calendar` | Interface |
 | M8 | Settings & Users UI ✅ | `ui/settings` | Interface |
 | M9 | Database, Auth & Supabase Setup ✅ | `backend/foundation` | Backend |
-| M10 | Leads & Kanban Backend | `backend/leads` | Backend |
+| M10 | Leads & Kanban Backend ✅ | `backend/leads` | Backend |
 | M11 | Casos Backend | `backend/casos` | Backend |
 | M12 | Radar Backend | `backend/radar` | Backend |
 | M13 | Dashboard Backend | `backend/dashboard` | Backend |
@@ -572,56 +572,68 @@ feat(backend/database): schema completo — tenants, clients, leads, casos, proc
 
 ---
 
-### M11 · Leads & Kanban Backend
+### M10 · Leads & Kanban Backend ✅ merged → `master`
 
-**Branch:** `backend/leads`
-**Objetivo:** Kanban 100% real — leads vindos do banco, drag-and-drop persiste no Supabase, CRUD completo.
+**Branch:** `backend/leads` ✅ merged → `master`
+**Objetivo:** Leads e Kanban 100% reais — dados do banco, drag-and-drop persiste no Supabase, CRUD completo, triagem IA com Claude.
 
 #### Entregas
 
 **Server Actions**
-- [ ] Criar `app/actions/leads.ts`:
-  - [ ] `getLeads(filters)` — busca leads do tenant com filtros
-  - [ ] `createLead(data)` — cria novo lead
-  - [ ] `updateLead(id, data)` — edita lead
-  - [ ] `deleteLead(id)` — remove lead
-  - [ ] `moveLeadStage(id, stageId)` — atualiza `stage_id`
-- [ ] Criar `app/actions/stages.ts`:
-  - [ ] `getStages()` — lista estágios do tenant
-  - [ ] `createDefaultStages(tenantId)` — seed dos 6 estágios padrão
+- [x] Criar `actions/leads.ts`:
+  - [x] `getLeads(filters)` — busca leads do tenant com filtros (stage, search)
+  - [x] `getLead(id)` — lead individual com joins
+  - [x] `getLeadActivities(id)` — histórico de mensagens como atividades
+  - [x] `createLead(data)` — cria novo lead com `tenant_id` da sessão
+  - [x] `updateLead(id, data)` — edita lead (patch parcial)
+  - [x] `deleteLead(id)` — soft delete (`deleted_at`)
+  - [x] `moveLeadStage(id, stageId)` — atualiza `stage_id`
+- [x] Criar `actions/stages.ts`:
+  - [x] `getStages()` — lista estágios do tenant ordenados por position
+  - [x] `createDefaultStages(tenantId)` — seed dos 6 estágios padrão
+
+**Leads conectados**
+- [x] `app/(dashboard)/leads/page.tsx` — Server Component com fetch real
+- [x] `app/(dashboard)/leads/[id]/page.tsx` — lead individual real, `notFound()` quando não existe
+- [x] `LeadsClient.tsx` — optimistic updates + Server Actions
+- [x] `LeadFormDialog.tsx` — stages dinâmicos do banco
+- [x] `LeadDetailClient.tsx` — dados reais do lead com edição inline
+- [x] `LeadTriagePanel.tsx` — botão "Gerar triagem" chama Claude real
 
 **Kanban conectado**
-- [ ] Substituir mock em `app/(dashboard)/leads/page.tsx` pelo fetch real (Server Component)
-- [ ] Drag-and-drop chama `moveLeadStage()` via Server Action
-- [ ] Otimistic update: card move imediatamente, reverte se falhar
+- [x] `app/(dashboard)/kanban/page.tsx` — Server Component com fetch real
+- [x] `KanbanBoard.tsx` — recebe `initialLeads` e `stages` do servidor
+- [x] Drag-and-drop chama `moveLeadStage()` via Server Action
+- [x] Optimistic update: card move imediatamente, reverte se falhar
+- [x] Colunas construídas dinamicamente a partir de `lead_stages` do banco
+- [x] `KanbanFormDialog.tsx` e `KanbanDetailDialog.tsx` — stages e origins reais
+- [x] `lib/mock/kanban.ts` — stubado, sem dados em runtime
 
-**Modal de criação/edição**
-- [ ] Formulário chama `createLead()` / `updateLead()`
-- [ ] Revalidação de cache após mutação (`revalidatePath`)
-- [ ] Toast de sucesso/erro
+**Triagem IA**
+- [x] Criar `actions/ai/lead-triage.ts`:
+  - [x] `triageLead(leadId)` — chama Claude (`claude-sonnet-4.6`) com contexto do lead
+  - [x] Retorna: área jurídica, resumo da demanda, urgência, sugestão de encaminhamento
+  - [x] Salva resultado em `leads.ai_triage` (JSONB)
 
-**Busca e filtros**
-- [ ] Filtro por responsável, origem e estágio passa parâmetros para `getLeads()`
-- [ ] Busca por nome é debounced (300ms)
+**Segurança**
+- [x] Criar `proxy.ts` (Next.js 16) — proteção de rotas + refresh de sessão Supabase
+- [x] Corrigir JWT claims: `role` → `app_role` em todas as RLS policies (migration `023_fix_app_role_claims.sql`)
+- [x] `lib/permissions.ts` — helpers `getAppClaims()`, `hasRole()`, `canWrite()`, `canManage()`, `isAdmin()`
 
-**Triagem Inteligente de Leads (IA — backend real)**
-- [ ] Criar `app/actions/ai/lead-triage.ts`:
-  - [ ] `triageLead(leadId)` — chama Claude API com contexto do lead/conversa
-  - [ ] Retorna: área jurídica, resumo da demanda, urgência, sugestão de encaminhamento
-  - [ ] Salva resultado em `leads.ai_triage` (JSONB)
-- [ ] Conectar `LeadTriagePanel` ao backend real
-- [ ] Acionar triagem automaticamente quando lead é criado via webhook
+**Tipos**
+- [x] `types/lead.ts` — reescrito: `Lead`, `LeadStage`, `LeadFormData`, `LeadTriage`
+- [x] `types/kanban.ts` — `KanbanLead.stageId` (UUID), `KanbanColumnConfig.id` (string), origem usa `LeadOrigin`
 
 **Verificação**
-- [ ] Lead criado no modal aparece no board sem refresh manual
-- [ ] Drag-and-drop persiste após recarregar a página
-- [ ] Filtros reduzem corretamente os resultados do banco
-- [ ] Triagem retorna resultado real do Claude
-- [ ] Build passa limpo
+- [x] Lead criado no modal aparece na tabela/kanban sem refresh manual
+- [x] Drag-and-drop persiste após recarregar a página
+- [x] Triagem retorna resultado real do Claude e salva no banco
+- [x] Usuário sem sessão em `/leads` ou `/kanban` → redirecionado para `/login`
+- [x] Build `next build` passa limpo
 
 **Commit final:**
 ```
-feat(backend): leads — CRUD, stage management, drag-and-drop persistence, AI triage
+feat(backend/leads): M10 — Leads & Kanban 100% real, proxy.ts, JWT fix, AI triage
 ```
 
 ---

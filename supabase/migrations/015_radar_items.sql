@@ -66,13 +66,13 @@ create policy "radar_items: membros ativos inserem"
   on radar_items for insert
   with check (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer', 'secretary')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer', 'secretary')
   );
 
 create policy "radar_items: advogado/admin atualizam (ex: resolver)"
   on radar_items for update
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer')
   );
 -- n8n usa service_role para inserção automática

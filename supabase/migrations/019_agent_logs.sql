@@ -55,6 +55,6 @@ create policy "agent_logs: admin/manager lêem"
   on agent_logs for select
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager')
   );
 -- Insert exclusivamente via service_role (n8n/webhooks)

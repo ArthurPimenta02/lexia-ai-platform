@@ -75,12 +75,12 @@ create policy "casos: advogado/admin inserem"
   on casos for insert
   with check (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer')
   );
 
 create policy "casos: advogado/admin atualizam"
   on casos for update
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer')
   );

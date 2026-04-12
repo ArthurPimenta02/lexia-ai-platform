@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -8,65 +9,83 @@ import {
   Mail,
   Phone,
   User,
-  Building2,
   CalendarDays,
   PhoneCall,
   CalendarClock,
   GitBranch,
   UserPlus,
+  MessageSquare,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from './StatusBadge'
 import { LeadFormDialog } from './LeadFormDialog'
 import { LeadTriagePanel } from './LeadTriagePanel'
-import { MOCK_LEAD_TRIAGE } from '@/lib/mock/leads'
-import type { Lead, LeadActivity } from '@/types/lead'
+import { updateLead } from '@/actions/leads'
+import type { Lead, LeadActivity, LeadStage, LeadFormData } from '@/types/lead'
 
 interface LeadDetailClientProps {
   lead: Lead
   activities: LeadActivity[]
+  stages: LeadStage[]
 }
 
 const ACTIVITY_ICONS: Record<
   LeadActivity['type'],
   React.ComponentType<{ className?: string }>
 > = {
-  lead_created: UserPlus,
-  email_sent: Mail,
-  call_made: PhoneCall,
+  lead_created:      UserPlus,
+  email_sent:        Mail,
+  call_made:         PhoneCall,
   meeting_scheduled: CalendarClock,
-  stage_changed: GitBranch,
+  stage_changed:     GitBranch,
+  message:           MessageSquare,
 }
 
 const ACTIVITY_COLORS: Record<LeadActivity['type'], string> = {
-  lead_created: 'text-blue-500 bg-blue-500/10',
-  email_sent: 'text-purple-500 bg-purple-500/10',
-  call_made: 'text-green-500 bg-green-500/10',
+  lead_created:      'text-blue-500 bg-blue-500/10',
+  email_sent:        'text-purple-500 bg-purple-500/10',
+  call_made:         'text-green-500 bg-green-500/10',
   meeting_scheduled: 'text-orange-500 bg-orange-500/10',
-  stage_changed: 'text-teal-500 bg-teal-500/10',
+  stage_changed:     'text-teal-500 bg-teal-500/10',
+  message:           'text-slate-500 dark:text-slate-400 bg-slate-500/10 dark:bg-slate-500/20',
 }
 
-type FormData = Omit<Lead, 'id' | 'createdAt'>
-
-export function LeadDetailClient({ lead, activities }: LeadDetailClientProps) {
+export function LeadDetailClient({ lead, activities, stages }: LeadDetailClientProps) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
   const [currentLead, setCurrentLead] = useState<Lead>(lead)
   const [editOpen, setEditOpen] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
 
-  function handleEdit(data: FormData & { id?: string }) {
-    setCurrentLead((prev) => ({ ...prev, ...data }))
+  function handleEdit(data: LeadFormData & { id?: string }) {
+    if (!data.id) return
+    setActionError(null)
+
+    // Optimistic update
+    const stage = stages.find((s) => s.id === data.stageId)
+    setCurrentLead((prev) => ({
+      ...prev,
+      ...data,
+      stageName:  stage?.name  ?? prev.stageName,
+      stageColor: stage?.color ?? prev.stageColor,
+    }))
     setEditOpen(false)
+
+    startTransition(async () => {
+      const result = await updateLead(data.id!, data)
+      if ('error' in result) {
+        setActionError(result.error)
+        setCurrentLead(lead) // reverter
+        return
+      }
+      router.refresh()
+    })
   }
 
-  const createdAt = new Date(currentLead.createdAt).toLocaleDateString(
-    'pt-BR',
-    { day: '2-digit', month: 'long', year: 'numeric' }
-  )
+  const createdAt = new Date(currentLead.createdAt).toLocaleDateString('pt-BR', {
+    day: '2-digit', month: 'long', year: 'numeric',
+  })
 
   return (
     <div className="space-y-6">
@@ -79,11 +98,18 @@ export function LeadDetailClient({ lead, activities }: LeadDetailClientProps) {
           <ArrowLeft className="h-3.5 w-3.5" />
           Voltar
         </Link>
-        <Button size="sm" onClick={() => setEditOpen(true)}>
+        <Button size="sm" onClick={() => setEditOpen(true)} disabled={isPending}>
           <Pencil className="h-3.5 w-3.5" />
           Editar
         </Button>
       </div>
+
+      {/* Error */}
+      {actionError && (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {actionError}
+        </p>
+      )}
 
       {/* Hero card */}
       <Card>
@@ -91,18 +117,17 @@ export function LeadDetailClient({ lead, activities }: LeadDetailClientProps) {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
               <CardTitle className="text-xl">{currentLead.name}</CardTitle>
-              <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Building2 className="h-3.5 w-3.5 shrink-0" />
-                {currentLead.company}
-              </p>
+              {currentLead.area && (
+                <p className="text-sm text-muted-foreground">{currentLead.area}</p>
+              )}
             </div>
-            <StatusBadge status={currentLead.status} />
+            <StatusBadge stageName={currentLead.stageName} stageColor={currentLead.stageColor} />
           </div>
         </CardHeader>
       </Card>
 
       {/* Triagem Inteligente */}
-      <LeadTriagePanel triage={MOCK_LEAD_TRIAGE[currentLead.id]} />
+      <LeadTriagePanel leadId={currentLead.id} triage={currentLead.aiTriage} />
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Contact info */}
@@ -111,43 +136,27 @@ export function LeadDetailClient({ lead, activities }: LeadDetailClientProps) {
             <CardTitle>Informações de contato</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <InfoRow
-              icon={Mail}
-              label="E-mail"
-              value={currentLead.email || '—'}
-            />
-            <InfoRow
-              icon={Phone}
-              label="Telefone"
-              value={currentLead.phone || '—'}
-            />
-            <InfoRow
-              icon={User}
-              label="CPF"
-              value={currentLead.cpf || '—'}
-            />
-            <InfoRow
-              icon={CalendarDays}
-              label="Criado em"
-              value={createdAt}
-            />
+            <InfoRow icon={Mail}        label="E-mail"     value={currentLead.email ?? '—'} />
+            <InfoRow icon={Phone}       label="Telefone"   value={currentLead.phone ?? '—'} />
+            <InfoRow icon={User}        label="CPF"        value={currentLead.cpf ?? '—'} />
+            <InfoRow icon={CalendarDays} label="Criado em" value={createdAt} />
             <InfoRow
               icon={UserPlus}
               label="Responsável"
-              value={currentLead.responsible || '—'}
+              value={currentLead.responsibleName ?? '—'}
             />
           </CardContent>
         </Card>
 
-        {/* Notes */}
+        {/* Demanda / Observações */}
         <Card>
           <CardHeader>
-            <CardTitle>Observações</CardTitle>
+            <CardTitle>Demanda / Observações</CardTitle>
           </CardHeader>
           <CardContent>
-            {currentLead.notes ? (
+            {currentLead.subject ? (
               <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
-                {currentLead.notes}
+                {currentLead.subject}
               </p>
             ) : (
               <p className="text-sm text-muted-foreground italic">
@@ -169,31 +178,23 @@ export function LeadDetailClient({ lead, activities }: LeadDetailClientProps) {
               {activities.map((activity) => {
                 const Icon = ACTIVITY_ICONS[activity.type]
                 const colorClass = ACTIVITY_COLORS[activity.type]
-                const date = new Date(activity.timestamp).toLocaleDateString(
-                  'pt-BR',
-                  { day: '2-digit', month: 'short', year: 'numeric' }
-                )
-                const time = new Date(activity.timestamp).toLocaleTimeString(
-                  'pt-BR',
-                  { hour: '2-digit', minute: '2-digit' }
-                )
+                const date = new Date(activity.timestamp).toLocaleDateString('pt-BR', {
+                  day: '2-digit', month: 'short', year: 'numeric',
+                })
+                const time = new Date(activity.timestamp).toLocaleTimeString('pt-BR', {
+                  hour: '2-digit', minute: '2-digit',
+                })
 
                 return (
                   <li key={activity.id} className="relative">
-                    {/* Icon dot on the timeline line */}
                     <div
                       className={`absolute -left-9 flex h-6 w-6 items-center justify-center rounded-full ${colorClass}`}
                     >
                       <Icon className="h-3 w-3" />
                     </div>
-
                     <div className="flex flex-col gap-0.5">
-                      <p className="text-sm text-foreground">
-                        {activity.description}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {date} às {time}
-                      </p>
+                      <p className="text-sm text-foreground">{activity.description}</p>
+                      <p className="text-xs text-muted-foreground">{date} às {time}</p>
                     </div>
                   </li>
                 )
@@ -208,7 +209,9 @@ export function LeadDetailClient({ lead, activities }: LeadDetailClientProps) {
         open={editOpen}
         onOpenChange={setEditOpen}
         initialData={currentLead}
+        stages={stages}
         onSubmit={handleEdit}
+        isPending={isPending}
       />
     </div>
   )

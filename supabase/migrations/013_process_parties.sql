@@ -50,6 +50,6 @@ create policy "process_parties: advogado/admin inserem"
       where p.id = process_parties.processo_id
         and p.tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
     )
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer')
   );
 -- Nota: sync via n8n/service_role não tem restrição de role

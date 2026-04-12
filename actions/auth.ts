@@ -26,6 +26,12 @@ export async function signIn(formData: FormData) {
 // Cria o tenant primeiro (via service role), depois o usuário Supabase Auth.
 // O trigger handle_new_user() em 021_auth_hooks.sql popula a tabela `users`
 // automaticamente com o tenant_id e role passados em raw_user_meta_data.
+//
+// NOTA sobre claims JWT:
+// - `role` em raw_user_meta_data → popula users.role (coluna do banco) via trigger
+// - O JWT emitido ao usuário carrega `app_role` (não `role`) via custom_jwt_claims()
+// - As policies RLS leem `auth.jwt() ->> 'app_role'`
+// - `role` no JWT é reservado ao Supabase/PostgREST (papel de banco)
 
 export async function signUp(formData: FormData) {
   const name         = formData.get('name') as string

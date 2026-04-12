@@ -65,6 +65,6 @@ create policy "process_updates: advogado/admin inserem"
       where p.id = process_updates.processo_id
         and p.tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
     )
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer')
   );
 -- Nota: n8n usa service_role para inserção de movimentações automáticas

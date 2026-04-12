@@ -55,6 +55,6 @@ create policy "caso_timeline: advogado/admin inserem"
   on caso_timeline for insert
   with check (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer', 'secretary')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer', 'secretary')
   );
 -- Nota: eventos automáticos (n8n, webhooks) inserem via service_role

@@ -64,19 +64,19 @@ create policy "leads: advogado/secretária/admin inserem"
   on leads for insert
   with check (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer', 'secretary')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer', 'secretary')
   );
 
 create policy "leads: advogado/secretária/admin atualizam"
   on leads for update
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer', 'secretary')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer', 'secretary')
   );
 
 create policy "leads: admin/manager deletam (soft)"
   on leads for update
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager')
   );

@@ -1,19 +1,19 @@
 import { Badge } from '@/components/ui/badge'
-import { STATUS_COLORS } from '@/lib/mock/leads'
 import type { LeadStatus } from '@/types/lead'
 
 interface StatusBadgeProps {
-  status: LeadStatus
+  stageName: LeadStatus
+  stageColor: string
 }
 
-export function StatusBadge({ status }: StatusBadgeProps) {
+export function StatusBadge({ stageName, stageColor }: StatusBadgeProps) {
   return (
     <Badge variant="outline" className="gap-1.5">
       <span
         className="size-1.5 rounded-full shrink-0"
-        style={{ backgroundColor: STATUS_COLORS[status] }}
+        style={{ backgroundColor: stageColor }}
       />
-      {status}
+      {stageName}
     </Badge>
   )
 }

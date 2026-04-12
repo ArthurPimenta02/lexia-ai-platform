@@ -37,5 +37,5 @@ create policy "lead_stages: admin/manager gerenciam"
   on lead_stages for all
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager')
   );

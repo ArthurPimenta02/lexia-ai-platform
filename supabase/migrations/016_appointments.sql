@@ -63,12 +63,12 @@ create policy "appointments: membros ativos inserem"
   on appointments for insert
   with check (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer', 'secretary')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer', 'secretary')
   );
 
 create policy "appointments: membros ativos atualizam"
   on appointments for update
   using (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer', 'secretary')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer', 'secretary')
   );

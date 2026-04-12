@@ -13,14 +13,16 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-import type { KanbanLead, KanbanStage, LegalArea, CaseOrigin } from '@/types/kanban'
+import type { KanbanLead, KanbanColumnConfig, LegalArea } from '@/types/kanban'
+import type { LeadOrigin } from '@/types/database'
 
 type FormData = Omit<KanbanLead, 'id' | 'createdAt'>
 
 interface KanbanFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  initialStage?: KanbanStage
+  initialStageId?: string
+  stages: KanbanColumnConfig[]
   onSubmit: (data: FormData) => void
 }
 
@@ -35,45 +37,14 @@ const LEGAL_AREAS: LegalArea[] = [
   'Tributário',
 ]
 
-const STAGES: { value: KanbanStage; label: string }[] = [
-  { value: 'novo_lead', label: 'Novo Lead' },
-  { value: 'triagem', label: 'Triagem Inicial' },
-  { value: 'consulta', label: 'Consulta Agendada' },
-  { value: 'proposta', label: 'Proposta / Contrato' },
-  { value: 'cliente_ativo', label: 'Cliente Ativo' },
-  { value: 'encerrado', label: 'Encerrado' },
+const ORIGINS: { value: LeadOrigin; label: string }[] = [
+  { value: 'manual',   label: 'Manual' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'web',      label: 'Site / Web' },
+  { value: 'referral', label: 'Indicação' },
+  { value: 'advbox',   label: 'ADVBOX' },
 ]
 
-const ORIGINS: CaseOrigin[] = [
-  'WhatsApp',
-  'Instagram',
-  'Formulário',
-  'Ligação',
-  'Indicação',
-  'LinkedIn',
-]
-
-const RESPONSAVEIS = [
-  'Dr. Lucas Oliveira',
-  'Dra. Fernanda Lima',
-  'Dra. Renata Souza',
-  'Dr. Felipe Andrade',
-]
-
-const empty: FormData = {
-  clientName: '',
-  caseTitle: '',
-  area: 'Cível',
-  stage: 'novo_lead',
-  honorarios: null,
-  responsible: RESPONSAVEIS[0],
-  origin: 'WhatsApp',
-  nextAction: '',
-  nextActionDate: null,
-  priority: 'medium',
-}
-
-// color-scheme: dark tells the browser to render the native <option> popup with dark background
 const selectClass = cn(
   'h-9 w-full rounded-lg border border-input bg-background px-2.5 py-1 text-sm text-foreground',
   'outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
@@ -83,18 +54,35 @@ const selectClass = cn(
 export function KanbanFormDialog({
   open,
   onOpenChange,
-  initialStage,
+  initialStageId,
+  stages,
   onSubmit,
 }: KanbanFormDialogProps) {
-  const [form, setForm] = useState<FormData>({ ...empty })
+  const defaultStageId = initialStageId ?? stages[0]?.id ?? ''
+
+  const emptyForm = (): FormData => ({
+    clientName:     '',
+    caseTitle:      '',
+    area:           'Cível',
+    stageId:        defaultStageId,
+    honorarios:     null,
+    responsible:    '',
+    origin:         'manual',
+    nextAction:     '',
+    nextActionDate: null,
+    priority:       'medium',
+  })
+
+  const [form, setForm] = useState<FormData>(emptyForm())
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
 
   useEffect(() => {
     if (open) {
-      setForm({ ...empty, stage: initialStage ?? 'novo_lead' })
+      setForm(emptyForm())
       setErrors({})
     }
-  }, [open, initialStage])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultStageId])
 
   function set<K extends keyof FormData>(key: K, value: FormData[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -105,7 +93,6 @@ export function KanbanFormDialog({
     const e: Partial<Record<keyof FormData, string>> = {}
     if (!form.clientName.trim()) e.clientName = 'Nome do cliente é obrigatório'
     if (!form.caseTitle.trim()) e.caseTitle = 'Assunto do caso é obrigatório'
-    if (!form.nextAction.trim()) e.nextAction = 'Próxima ação é obrigatória'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -179,11 +166,11 @@ export function KanbanFormDialog({
                 <select
                   id="kf-stage"
                   className={selectClass}
-                  value={form.stage}
-                  onChange={(e) => set('stage', e.target.value as KanbanStage)}
+                  value={form.stageId}
+                  onChange={(e) => set('stageId', e.target.value)}
                 >
-                  {STAGES.map((s) => (
-                    <option key={s.value} value={s.value}>{s.label}</option>
+                  {stages.map((s) => (
+                    <option key={s.id} value={s.id}>{s.label}</option>
                   ))}
                 </select>
               </div>
@@ -199,10 +186,7 @@ export function KanbanFormDialog({
                   placeholder="Ex: 3500"
                   value={form.honorarios ?? ''}
                   onChange={(e) =>
-                    set(
-                      'honorarios',
-                      e.target.value === '' ? null : Number(e.target.value)
-                    )
+                    set('honorarios', e.target.value === '' ? null : Number(e.target.value))
                   }
                 />
               </div>
@@ -213,61 +197,41 @@ export function KanbanFormDialog({
                   id="kf-origin"
                   className={selectClass}
                   value={form.origin}
-                  onChange={(e) => set('origin', e.target.value as CaseOrigin)}
+                  onChange={(e) => set('origin', e.target.value as LeadOrigin)}
                 >
                   {ORIGINS.map((o) => (
-                    <option key={o} value={o}>{o}</option>
+                    <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
               </div>
             </div>
 
-            {/* Responsible + Priority */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="kf-responsible">Responsável</Label>
-                <select
-                  id="kf-responsible"
-                  className={selectClass}
-                  value={form.responsible}
-                  onChange={(e) => set('responsible', e.target.value)}
-                >
-                  {RESPONSAVEIS.map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="kf-priority">Prioridade</Label>
-                <select
-                  id="kf-priority"
-                  className={selectClass}
-                  value={form.priority}
-                  onChange={(e) =>
-                    set('priority', e.target.value as 'low' | 'medium' | 'high')
-                  }
-                >
-                  <option value="low">Baixa</option>
-                  <option value="medium">Média</option>
-                  <option value="high">Alta</option>
-                </select>
-              </div>
+            {/* Priority */}
+            <div className="space-y-1.5">
+              <Label htmlFor="kf-priority">Prioridade</Label>
+              <select
+                id="kf-priority"
+                className={selectClass}
+                value={form.priority}
+                onChange={(e) =>
+                  set('priority', e.target.value as 'low' | 'medium' | 'high')
+                }
+              >
+                <option value="low">Baixa</option>
+                <option value="medium">Média</option>
+                <option value="high">Alta</option>
+              </select>
             </div>
 
             {/* Next action */}
             <div className="space-y-1.5">
-              <Label htmlFor="kf-nextAction">Próxima ação *</Label>
+              <Label htmlFor="kf-nextAction">Próxima ação</Label>
               <Input
                 id="kf-nextAction"
                 placeholder="Ex: Ligar para o cliente amanhã"
                 value={form.nextAction}
                 onChange={(e) => set('nextAction', e.target.value)}
-                aria-invalid={!!errors.nextAction || undefined}
               />
-              {errors.nextAction && (
-                <p className="text-xs text-destructive">{errors.nextAction}</p>
-              )}
             </div>
 
             {/* Next action date */}
@@ -278,10 +242,7 @@ export function KanbanFormDialog({
                 type="datetime-local"
                 value={form.nextActionDate?.slice(0, 16) ?? ''}
                 onChange={(e) =>
-                  set(
-                    'nextActionDate',
-                    e.target.value ? e.target.value + ':00Z' : null
-                  )
+                  set('nextActionDate', e.target.value ? e.target.value + ':00Z' : null)
                 }
               />
             </div>

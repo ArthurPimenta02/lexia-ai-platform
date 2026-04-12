@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
-import { MOCK_LEADS, MOCK_LEAD_ACTIVITIES } from '@/lib/mock/leads'
+import { getLead, getLeadActivities } from '@/actions/leads'
+import { getStages } from '@/actions/stages'
 import { LeadDetailClient } from '@/components/leads/LeadDetailClient'
 
 interface Props {
@@ -8,13 +9,16 @@ interface Props {
 
 export default async function LeadDetailPage({ params }: Props) {
   const { id } = await params
-  const lead = MOCK_LEADS.find((l) => l.id === id)
+
+  const [lead, activities, stages] = await Promise.all([
+    getLead(id),
+    getLeadActivities(id),
+    getStages(),
+  ])
 
   if (!lead) {
     notFound()
   }
 
-  const activities = MOCK_LEAD_ACTIVITIES[id] ?? []
-
-  return <LeadDetailClient lead={lead} activities={activities} />
+  return <LeadDetailClient lead={lead} activities={activities} stages={stages} />
 }

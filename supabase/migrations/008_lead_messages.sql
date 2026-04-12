@@ -42,6 +42,6 @@ create policy "lead_messages: membros ativos inserem"
   on lead_messages for insert
   with check (
     tenant_id = (auth.jwt() ->> 'tenant_id')::uuid
-    and (auth.jwt() ->> 'role') in ('admin', 'manager', 'lawyer', 'secretary')
+    and (auth.jwt() ->> 'app_role') in ('admin', 'manager', 'lawyer', 'secretary')
   );
 -- Nota: n8n insere via service_role (sem restrição de role)
