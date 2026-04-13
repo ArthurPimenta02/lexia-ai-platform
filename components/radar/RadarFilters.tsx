@@ -23,7 +23,7 @@ interface RadarFiltersProps {
 }
 
 const SELECT_CLASS =
-  'h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
+  'h-9 rounded-md border border-input bg-background text-foreground px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
 
 export function RadarFilters({
   search,

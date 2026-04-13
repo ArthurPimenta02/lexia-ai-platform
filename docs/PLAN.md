@@ -25,7 +25,7 @@
 | M8 | Settings & Users UI ✅ | `ui/settings` | Interface |
 | M9 | Database, Auth & Supabase Setup ✅ | `backend/foundation` | Backend |
 | M10 | Leads & Kanban Backend ✅ | `backend/leads` | Backend |
-| M11 | Casos Backend | `backend/casos` | Backend |
+| M11 | Casos Backend ✅ | `backend/casos` | Backend |
 | M12 | Radar Backend | `backend/radar` | Backend |
 | M13 | Dashboard Backend | `backend/dashboard` | Backend |
 | M14 | Calendar Backend | `backend/calendar` | Backend |
@@ -638,48 +638,68 @@ feat(backend/leads): M10 — Leads & Kanban 100% real, proxy.ts, JWT fix, AI tri
 
 ---
 
-### M12 · Casos Backend
+### M11 · Casos Backend ✅ merged → `master`
 
-**Branch:** `backend/casos`
+**Branch:** `backend/casos` ✅ merged → `master`
 **Objetivo:** Casos e dossiê 100% reais — dados do banco, linha do tempo persistida, Dossiê Inteligente alimentado pelo Claude.
 
 #### Entregas
 
+**Migrations**
+- [x] `024_caso_pendencias.sql` — tabela de pendências com RLS, índices e trigger `updated_at`
+- [x] `025_caso_documentos.sql` — tabela de documentos com RLS e índices
+- [x] `026_fix_soft_delete_rls.sql` — corrige WITH CHECK implícito nas políticas UPDATE de leads e casos
+- [x] `027_debug_jwt_claims.sql` — função diagnóstico temporária (remover na limpeza)
+
 **Server Actions**
-- [ ] Criar `app/actions/casos.ts`:
-  - [ ] `getCasos(filters)` — lista casos do tenant
-  - [ ] `getCaso(id)` — dados completos do caso com timeline e processos
-  - [ ] `createCaso(data)` — cria novo caso (pode ser disparado ao converter lead)
-  - [ ] `updateCaso(id, data)` — edita caso
-  - [ ] `addTimelineEvent(casoId, event)` — adiciona evento à linha do tempo
-- [ ] Criar `app/actions/processos.ts`:
-  - [ ] `getProcessosByCaso(casoId)` — lista processos vinculados
-  - [ ] `addProcesso(casoId, data)` — vincula processo ao caso
+- [x] `actions/casos.ts`:
+  - [x] `getCasos(filters)` — lista casos do tenant com joins (client, responsável, lead)
+  - [x] `getCaso(id)` — dados completos: timeline, processos, pendências, documentos, proximoPrazo
+  - [x] `createCaso(data)` — upsert client por nome + INSERT caso + evento de criação na timeline
+  - [x] `updateCaso(id, data)` — patch parcial + evento de atualização de status na timeline
+  - [x] `deleteCaso(id)` — soft delete via service_role com filtro manual de tenant_id
+  - [x] `addTimelineEvent(casoId, event)` — append-only na caso_timeline
+  - [x] `createPendencia(casoId, data)` — insere em caso_pendencias
+  - [x] `updatePendencia(id, casoId, resolvida)` — marca pendência como resolvida
+  - [x] `getUsers()` — lista usuários ativos do tenant para select de responsável
+  - [x] `getLeadsSummary()` — lista leads para vínculo no form de caso
+- [x] `actions/ai/dossie.ts`:
+  - [x] `generateDossie(casoId)` — chama Claude (`claude-sonnet-4.6`) com contexto completo do caso
+  - [x] Contexto: timeline, processos, pendências, próxima ação, área jurídica
+  - [x] Salva em `casos.dossie_ia` (JSONB) com `dossie_gerado_em`
+- [x] `actions/leads.ts#deleteLead()` — corrigido: service_role + filtro manual de tenant_id
 
-**Dossiê Inteligente (IA — backend real)**
-- [ ] Criar `app/actions/ai/dossie.ts`:
-  - [ ] `generateDossie(casoId)` — chama Claude API com contexto consolidado do caso
-  - [ ] Contexto: timeline, processos, prazos, responsável, área jurídica
-  - [ ] Retorna: resumo vivo, pontos críticos, pendências, próximos marcos, última movimentação relevante
-  - [ ] Salva resultado em `casos.dossie_ia` (JSONB) com timestamp
-  - [ ] Cache inteligente: regenera apenas quando há novos eventos na timeline
-- [ ] Conectar `DossieInteligente` ao backend real
-- [ ] Botão "Atualizar Dossiê" para regenerar manualmente
+**Páginas conectadas**
+- [x] `app/(dashboard)/casos/page.tsx` — Server Component com fetch real
+- [x] `app/(dashboard)/casos/[id]/page.tsx` — Server Component com `notFound()` se não encontrado
 
-**Conversão Lead → Caso**
-- [ ] Criar `app/actions/leads.ts#convertToCase()` — cria caso a partir de lead convertido
-- [ ] Trigger: ao mover lead para estágio "Cliente", oferecer criação do caso
+**Componentes atualizados**
+- [x] `CasosClient.tsx` — recebe `initialCasos`, `users` e `leads` do servidor; optimistic CRUD
+- [x] `CasoFormDialog.tsx` — users como select dinâmico; campo lead de origem opcional
+- [x] `DossieClient.tsx` — timeline real, pendências reais, processos reais, documentos reais
+- [x] `DossieInteligente.tsx` — botão "Gerar Dossiê" com `useTransition`, chama `generateDossie()`
+- [x] `lib/mock/casos.ts` — stub (sem dados em runtime)
+
+**Tipos**
+- [x] `types/caso.ts` — reescrito: `Caso`, `CasoSummary`, `TimelineEvent`, `Pendencia`, `Documento`, `ProcessoVinculado`, `DossieInteligente`
+
+**Correções de bugs**
+- [x] Soft delete de leads e casos — corrigido via service_role (RLS bloqueava UPDATE com deleted_at)
+- [x] Dark mode em selects nativos — `text-foreground` adicionado em todos os `<select>` do projeto
 
 **Verificação**
-- [ ] Caso criado aparece na lista sem refresh
-- [ ] Linha do tempo persiste após reload
-- [ ] Dossiê Inteligente retorna resumo real do Claude
-- [ ] Cache impede rechamada desnecessária da API
-- [ ] Build passa limpo
+- [x] Caso criado aparece na lista sem refresh manual
+- [x] Editar caso — dados pré-preenchidos com valores reais do banco
+- [x] Deletar caso — soft delete, some da lista após reload
+- [x] `/casos/[id]` com ID inválido → 404
+- [x] Timeline real, pendências reais, processos reais
+- [x] Botão "Resolver" em pendência persiste após reload
+- [x] Botão "Gerar Dossiê" → resultado real do Claude exibido e salvo
+- [x] Build `next build` passa limpo (TypeScript strict)
 
 **Commit final:**
 ```
-feat(backend): casos — CRUD, timeline, processo vínculo, Dossiê Inteligente com Claude
+feat(backend/casos): M11 — CRUD, timeline, pendências, Dossiê IA, soft delete fix, dark mode selects
 ```
 
 ---

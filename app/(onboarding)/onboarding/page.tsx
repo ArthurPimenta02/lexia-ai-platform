@@ -210,7 +210,7 @@ export default function OnboardingPage() {
                     value={oab.state}
                     onChange={(e) => updateOab(index, 'state', e.target.value)}
                     disabled={loading}
-                    className="h-10 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50"
+                    className="h-10 rounded-md border border-input bg-background text-foreground px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50"
                   >
                     {BR_STATES.map((s) => (
                       <option key={s} value={s}>{s}</option>

@@ -106,7 +106,7 @@ export function OfficeForm({ initial }: OfficeFormProps) {
                 id="of-area"
                 value={form.primaryPracticeArea}
                 onChange={(e) => set('primaryPracticeArea', e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {PRACTICE_AREA_OPTIONS.map((a) => (
                   <option key={a} value={a}>{a}</option>
@@ -121,7 +121,7 @@ export function OfficeForm({ initial }: OfficeFormProps) {
                 id="of-timezone"
                 value={form.timezone}
                 onChange={(e) => set('timezone', e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {TIMEZONES.map((tz) => (
                   <option key={tz.value} value={tz.value}>{tz.label}</option>
