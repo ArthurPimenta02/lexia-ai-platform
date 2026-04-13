@@ -26,7 +26,7 @@
 | M9 | Database, Auth & Supabase Setup ✅ | `backend/foundation` | Backend |
 | M10 | Leads & Kanban Backend ✅ | `backend/leads` | Backend |
 | M11 | Casos Backend ✅ | `backend/casos` | Backend |
-| M12 | Radar Backend | `backend/radar` | Backend |
+| M12 | Radar Backend ✅ | `backend/radar` | Backend |
 | M13 | Dashboard Backend | `backend/dashboard` | Backend |
 | M14 | Calendar Backend | `backend/calendar` | Backend |
 | M15 | Settings & Users Backend | `backend/settings` | Backend |
@@ -704,53 +704,66 @@ feat(backend/casos): M11 — CRUD, timeline, pendências, Dossiê IA, soft delet
 
 ---
 
-### M13 · Radar Backend
+### M12 · Radar Backend ✅ merged → `master` (PR #20)
 
-**Branch:** `backend/radar`
-**Objetivo:** Radar 100% real — publicações e movimentações vindas de Escavador/Datajud via n8n, Resumo Inteligente gerado pelo Claude, prazos criados automaticamente.
+**Branch:** `backend/radar` ✅ merged → `master`
+**Objetivo:** Radar 100% real — dados do banco, Resumo Inteligente via GPT-4o, webhook de ingestão para n8n, Realtime, exclusão de itens.
 
 #### Entregas
 
-**Server Actions**
-- [ ] Criar `app/actions/radar.ts`:
-  - [ ] `getRadarItems(filters)` — lista itens com filtros (tipo, urgência, exige ação, caso)
-  - [ ] `markResolved(itemId)` — marca item como resolvido
-  - [ ] `createPrazo(itemId, data)` — cria prazo a partir de item do radar
-  - [ ] `updateCasoFromRadar(itemId, casoId)` — atualiza caso com movimentação
+**Server Actions — `actions/radar.ts`**
+- [x] `getRadarItems(filters)` — lista com filtros: tipo, urgência, exige ação, período, caso, busca textual
+- [x] `markResolved(itemId)` — status → `resolvido`, `resolvido_em` = now() via service_role
+- [x] `markInAnalysis(itemId)` — status → `em_analise` via service_role
+- [x] `deleteRadarItem(itemId)` — DELETE com filtro de tenant via service_role
+- [x] `createPrazo(data)` — insere em `appointments` com rastreabilidade `[radar:uuid]` no campo `descricao`
+- [x] `getTenantUsers()` — lista usuários ativos para select de responsável
 
-**Resumo Inteligente (IA — backend real)**
-- [ ] Criar `app/actions/ai/radar-summary.ts`:
-  - [ ] `summarizeRadarItem(itemId)` — chama Claude API com conteúdo da publicação/movimentação
-  - [ ] Retorna: resumo prático, explicação do acontecimento, urgência classificada, se exige ação, próximo passo sugerido
-  - [ ] Salva resultado em `radar_items.ai_summary` (JSONB)
-  - [ ] Gerado automaticamente na ingestão do item via webhook
+**Resumo Inteligente (IA) — `actions/ai/radar-summary.ts`**
+- [x] `summarizeRadarItem(itemId)` — Server Action para Client Components (valida sessão)
+- [x] `summarizeRadarItemInternal(itemId)` — versão plain async para Route Handlers (sem perder request context)
+- [x] Chama OpenAI GPT-4o com contexto: item + caso + processo vinculado
+- [x] Retorna: `resumo`, `explicacaoPratica`, `proximoPasso`, `riscoSeNaoAgir`, `impactoNoCaso`
+- [x] Salva em `radar_items.ai_summary` (JSONB) via service_role (UPDATE exige app_role)
+- [x] Strip de markdown fences antes de `JSON.parse` (GPT-4o envolve JSON em ` ```json ``` `)
 
-**Webhook de ingestão (n8n → plataforma)**
-- [ ] Criar `app/api/webhooks/radar/route.ts` — endpoint POST que n8n chama ao detectar movimentação
-  - [ ] Valida `X-Webhook-Secret`
-  - [ ] Cria `radar_item` no banco
-  - [ ] Aciona `summarizeRadarItem()` de forma assíncrona
-  - [ ] Cria notificação para o responsável pelo caso
-- [ ] Criar `app/api/webhooks/publicacao/route.ts` — ingestão de publicações (DOU, DEJT, TJs)
+**Webhook de ingestão — `app/api/webhooks/radar/route.ts`**
+- [x] POST `/api/webhooks/radar` com validação de `X-Webhook-Secret` (env: `N8N_WEBHOOK_SECRET`)
+- [x] Derivação segura de `tenant_id`: via `caso_id` → query `casos`; via `processo_id` → query `processos`; fallback `tenant_id` com validação no banco
+- [x] Cria `radar_item` (status: `novo`) e notificação para responsável do caso
+- [x] Dispara `summarizeRadarItemInternal` de forma assíncrona (fire-and-forget com catch)
 
-**Realtime**
-- [ ] Criar `lib/hooks/useRealtimeRadar.ts` — subscribe em `radar_items` do tenant
-- [ ] Novo item aparece no topo da lista automaticamente com badge "Novo"
+**Realtime — `lib/hooks/useRealtimeRadar.ts`**
+- [x] Subscribe em INSERT em `radar_items` filtrado por `tenant_id`
+- [x] Deduplicação via `existingIds: Set<string>` (inicializado com IDs do SSR)
+- [x] Channel name único por mount (`radar:${tenantId}:${Date.now()}`) — evita conflito em remount
 
-**Notificações**
-- [ ] Itens de urgência Alta geram notificação push imediata no sino do header
-- [ ] Itens que exigem ação têm badge destacado na navegação do Radar
+**Componentes atualizados**
+- [x] `app/(dashboard)/radar/page.tsx` — Server Component com SSR: busca `initialItems` + `tenantId`
+- [x] `RadarClient.tsx` — recebe props SSR, `handleDelete`, optimistic updates com rollback correto para `handleResolve` e `handleMarkInAnalysis`
+- [x] `RadarItemDetail.tsx` — botão "Excluir" (chama `deleteRadarItem` diretamente), botão "Gerar Resumo Inteligente" on-demand, "Adicionar à timeline"
+- [x] `RadarCard.tsx` — trash icon no hover, chama `deleteRadarItem` + `onDelete`
+- [x] `RadarList.tsx` — prop `onDeleteItem` passada para `RadarCard`
+- [x] `RadarCriarPrazoDialog.tsx` — chama `createPrazo` Server Action, busca usuários via `getTenantUsers`
+
+**Correções de bugs (infraestrutura)**
+- [x] `proxy.ts` — `export default async function proxy` (era named export → causava 404 em todas as rotas)
+- [x] `app/layout.tsx` — `<Script strategy="beforeInteractive">` (React 19 não aceita `<script>` em `<head>`)
+- [x] `actions/stages.ts` — `createDefaultStages` usa `createServiceClient()` com try/catch (RLS + FK)
+- [x] `types/radar.ts` — `RadarOrigem` inclui `'cnj'`, `RADAR_ORIGEM_LABELS` atualizado
 
 **Verificação**
-- [ ] POST no webhook cria item no radar e dispara resumo IA
-- [ ] Item aparece no radar em tempo real (Realtime)
-- [ ] Resumo Inteligente exibe resultado real do Claude
-- [ ] Criar prazo a partir de item do radar persiste no banco
-- [ ] Build passa limpo
+- [x] Lista carrega do banco via SSR sem dados mock
+- [x] POST no webhook → item aparece em tempo real (Realtime)
+- [x] Resumo Inteligente gerado on-demand via GPT-4o
+- [x] Excluir via card (hover) e via sheet — não reaparece após reload
+- [x] Marcar como resolvido → badge muda, persiste após reload
+- [x] Criar prazo → salvo em `appointments`
+- [x] `npx tsc --noEmit` passa limpo
 
 **Commit final:**
 ```
-feat(backend): radar — webhook ingestão, Resumo Inteligente com Claude, Realtime, prazos
+feat(backend/radar): M13 — Radar backend completo com actions reais, Resumo IA, webhook e Realtime
 ```
 
 ---
