@@ -148,7 +148,7 @@ export function RadarCriarPrazoDialog({
                 id="rp-tipo"
                 value={form.tipo}
                 onChange={(e) => set('tipo', e.target.value as TipoPrazo)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {(Object.keys(TIPOS_PRAZO) as TipoPrazo[]).map((t) => (
                   <option key={t} value={t}>{TIPOS_PRAZO[t]}</option>
@@ -182,7 +182,7 @@ export function RadarCriarPrazoDialog({
               id="rp-responsavel"
               value={form.responsavel}
               onChange={(e) => set('responsavel', e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               {RESPONSAVEIS_DISPONIVEIS.map((r) => (
                 <option key={r} value={r}>{r}</option>

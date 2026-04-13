@@ -149,7 +149,7 @@ export function CasoFormDialog({ open, onOpenChange, caso, users, leads, onSave 
                 id="cf-area"
                 value={form.area}
                 onChange={(e) => set('area', e.target.value as CasoArea)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {CASO_AREAS.map((a) => (
                   <option key={a} value={a}>{a}</option>
@@ -163,7 +163,7 @@ export function CasoFormDialog({ open, onOpenChange, caso, users, leads, onSave 
                 id="cf-status"
                 value={form.status}
                 onChange={(e) => set('status', e.target.value as CasoStatus)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {CASO_STATUSES.map((s) => (
                   <option key={s} value={s}>{s}</option>
@@ -179,7 +179,7 @@ export function CasoFormDialog({ open, onOpenChange, caso, users, leads, onSave 
               id="cf-responsavel"
               value={form.responsavelId}
               onChange={(e) => set('responsavelId', e.target.value)}
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <option value="">— Sem responsável —</option>
               {users.map((u) => (
@@ -196,7 +196,7 @@ export function CasoFormDialog({ open, onOpenChange, caso, users, leads, onSave 
                 id="cf-lead"
                 value={form.leadId}
                 onChange={(e) => set('leadId', e.target.value)}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="">— Sem lead vinculado —</option>
                 {leads.map((l) => (

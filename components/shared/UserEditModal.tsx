@@ -63,7 +63,7 @@ export function UserEditModal({ open, onOpenChange, user, onSave }: UserEditModa
                 id="edit-role"
                 value={form.role}
                 onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value as UserRole }))}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {ROLE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -78,7 +78,7 @@ export function UserEditModal({ open, onOpenChange, user, onSave }: UserEditModa
                 id="edit-status"
                 value={form.status}
                 onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as UserStatus }))}
-                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {(Object.entries(USER_STATUS_LABELS) as [UserStatus, string][]).map(([val, label]) => (
                   <option key={val} value={val}>{label}</option>

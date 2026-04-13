@@ -175,7 +175,7 @@ export function CasosClient({ initialCasos, users, leads }: CasosClientProps) {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as CasoStatus | '')}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="h-9 rounded-md border border-input bg-background text-foreground px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <option value="">Todos os status</option>
             {CASO_STATUSES.map((s) => (
@@ -189,7 +189,7 @@ export function CasosClient({ initialCasos, users, leads }: CasosClientProps) {
           <select
             value={filterArea}
             onChange={(e) => setFilterArea(e.target.value as CasoArea | '')}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="h-9 rounded-md border border-input bg-background text-foreground px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <option value="">Todas as áreas</option>
             {CASO_AREAS.map((a) => (
@@ -201,7 +201,7 @@ export function CasosClient({ initialCasos, users, leads }: CasosClientProps) {
           <select
             value={filterResponsavel}
             onChange={(e) => setFilterResponsavel(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="h-9 rounded-md border border-input bg-background text-foreground px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <option value="">Todos os responsáveis</option>
             {users.map((u) => (
