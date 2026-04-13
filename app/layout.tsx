@@ -29,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${inter.variable} ${firaCode.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="h-full overflow-hidden bg-background text-foreground">
+      <body className="h-full overflow-hidden bg-background text-foreground" suppressHydrationWarning>
         <Script id="theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeScript }} />
         <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>

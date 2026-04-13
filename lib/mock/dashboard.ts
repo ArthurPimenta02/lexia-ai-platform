@@ -87,58 +87,53 @@ export const mockFunnel = [
   { stage: 'Perdido', count: 15, color: '#9CA3AF' },
 ]
 
-export type ActivityType = 'lead_created' | 'message_received' | 'handoff' | 'stage_changed' | 'appointment'
+// Re-exporta os tipos canônicos de types/dashboard para compatibilidade
+export type { ActivityType, Activity } from '@/types/dashboard'
 
-export interface Activity {
-  id: string
-  type: ActivityType
-  title: string
-  description: string
-  timestamp: Date
-}
+// Datas fixas em ISO string — evita divergência SSR/cliente com Date.now()
+import type { Activity } from '@/types/dashboard'
 
-// Datas fixas (ISO) — evita divergência SSR/cliente com Date.now()
 export const mockActivities: Activity[] = [
   {
     id: '1',
     type: 'handoff',
     title: 'Handoff solicitado',
     description: 'Maria Silva solicitou atendimento humano',
-    timestamp: new Date('2026-04-09T14:55:00Z'),
+    timestamp: '2026-04-09T14:55:00Z',
   },
   {
     id: '2',
     type: 'lead_created',
     title: 'Novo lead criado',
     description: 'João Ferreira via WhatsApp',
-    timestamp: new Date('2026-04-09T14:42:00Z'),
+    timestamp: '2026-04-09T14:42:00Z',
   },
   {
     id: '3',
     type: 'stage_changed',
     title: 'Lead avançou no pipeline',
     description: 'Ana Costa: Qualificado → Proposta',
-    timestamp: new Date('2026-04-09T14:15:00Z'),
+    timestamp: '2026-04-09T14:15:00Z',
   },
   {
     id: '4',
     type: 'message_received',
     title: 'Nova mensagem',
     description: 'Carlos Mendes enviou documentos',
-    timestamp: new Date('2026-04-09T13:00:00Z'),
+    timestamp: '2026-04-09T13:00:00Z',
   },
   {
     id: '5',
     type: 'appointment',
     title: 'Agendamento confirmado',
     description: 'Reunião com Pedro Alves amanhã às 14h',
-    timestamp: new Date('2026-04-09T12:00:00Z'),
+    timestamp: '2026-04-09T12:00:00Z',
   },
   {
     id: '6',
     type: 'lead_created',
     title: 'Novo lead criado',
     description: 'Lucia Barbosa via site',
-    timestamp: new Date('2026-04-09T10:00:00Z'),
+    timestamp: '2026-04-09T10:00:00Z',
   },
 ]
