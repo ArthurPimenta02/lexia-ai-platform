@@ -1,7 +1,7 @@
 'use server'
 
 import { generateText } from 'ai'
-import { anthropic } from '@ai-sdk/anthropic'
+import { openai } from '@ai-sdk/openai'
 import { createClient } from '@/lib/supabase/server'
 import type { LeadTriage } from '@/types/lead'
 
@@ -60,14 +60,15 @@ Gere no máximo 3 intakeCards com os pontos mais relevantes para o advogado que 
 
   try {
     const { text } = await generateText({
-      model:           anthropic('claude-sonnet-4.6'),
+      model:           openai('gpt-4o'),
       prompt,
       maxOutputTokens: 1024,
     })
 
     let parsed: unknown
     try {
-      parsed = JSON.parse(text.trim())
+      const clean = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
+      parsed = JSON.parse(clean)
     } catch {
       console.error('triageLead: JSON inválido:', text)
       return { error: 'A IA retornou uma resposta em formato inválido. Tente novamente.' }

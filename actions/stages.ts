@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import type { LeadStage, LeadStatus } from '@/types/lead'
 
 // Estágios padrão do pipeline. Inseridos no seed.sql — esta lista é usada
@@ -32,10 +32,17 @@ export async function getStages(): Promise<LeadStage[]> {
   if (error) throw new Error(`Erro ao buscar estágios: ${error.message}`)
 
   if (!data || data.length === 0) {
-    // Tenant sem estágios — extrair tenant_id do JWT e criar padrão
+    // Tenant sem estágios — tenta criar os padrão
     const tenantId = user.user_metadata?.tenant_id as string | undefined
-    if (!tenantId) throw new Error('tenant_id não encontrado na sessão')
-    return createDefaultStages(tenantId)
+    if (!tenantId) return []
+    try {
+      return await createDefaultStages(tenantId)
+    } catch (err) {
+      // Se o tenant ainda não existe no banco (FK falha), retorna vazio
+      // em vez de quebrar a página. Setup do banco pendente.
+      console.warn('getStages: tenant não encontrado no banco ainda —', err)
+      return []
+    }
   }
 
   return data.map(rowToStage)
@@ -45,10 +52,9 @@ export async function getStages(): Promise<LeadStage[]> {
 // Insere os 6 estágios padrão para um tenant. Usa upsert para ser idempotente.
 
 export async function createDefaultStages(tenantId: string): Promise<LeadStage[]> {
-  const supabase = await createClient()
-
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) throw new Error('Não autenticado')
+  // Usa service client: criação de estágios padrão é operação de bootstrap
+  // que precisa bypassar RLS (o usuário pode não ter app_role no JWT ainda).
+  const service = createServiceClient()
 
   const rows = DEFAULT_STAGES.map((s) => ({
     tenant_id:   tenantId,
@@ -59,7 +65,7 @@ export async function createDefaultStages(tenantId: string): Promise<LeadStage[]
     is_terminal: s.isTerminal,
   }))
 
-  const { data, error } = await supabase
+  const { data, error } = await service
     .from('lead_stages')
     .upsert(rows, { onConflict: 'tenant_id,name' })
     .select('id, name, color, position, is_default, is_terminal')

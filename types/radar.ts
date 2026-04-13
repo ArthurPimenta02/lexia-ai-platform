@@ -1,7 +1,7 @@
 export type RadarTipo = 'publicacao' | 'movimentacao' | 'alerta_prazo' | 'acao_requerida'
 export type RadarUrgencia = 'Alta' | 'Media' | 'Baixa'
 export type RadarStatus = 'novo' | 'em_analise' | 'resolvido'
-export type RadarOrigem = 'escavador' | 'interno' | 'manual' | 'sistema'
+export type RadarOrigem = 'escavador' | 'cnj' | 'interno' | 'manual' | 'sistema'
 
 export interface RadarItem {
   id: string
@@ -65,6 +65,7 @@ export const RADAR_STATUS_LABELS: Record<RadarStatus, string> = {
 
 export const RADAR_ORIGEM_LABELS: Record<RadarOrigem, string> = {
   escavador: 'Escavador',
+  cnj: 'CNJ',
   interno: 'Interno',
   manual: 'Manual',
   sistema: 'Sistema',

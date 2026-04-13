@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter, Fira_Code } from 'next/font/google'
+import Script from 'next/script'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ThemeProvider, themeScript } from '@/components/ThemeProvider'
 import './globals.css'
@@ -28,11 +29,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${inter.variable} ${firaCode.variable} h-full antialiased`} suppressHydrationWarning>
-      <head>
-        {/* Aplica tema antes da hidratação — evita flash */}
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body className="h-full overflow-hidden bg-background text-foreground">
+        <Script id="theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeScript }} />
         <ThemeProvider>
           <TooltipProvider>{children}</TooltipProvider>
         </ThemeProvider>

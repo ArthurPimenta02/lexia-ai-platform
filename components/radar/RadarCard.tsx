@@ -1,9 +1,11 @@
 'use client'
 
-import { BriefcaseBusiness, AlertCircle, User } from 'lucide-react'
+import { useState } from 'react'
+import { BriefcaseBusiness, AlertCircle, User, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { RadarTipoBadge, RadarUrgenciaBadge, RadarStatusBadge } from './RadarBadge'
 import { RADAR_ORIGEM_LABELS } from '@/types/radar'
+import { deleteRadarItem } from '@/actions/radar'
 import type { RadarItem } from '@/types/radar'
 
 function formatRelative(iso: string): string {
@@ -23,9 +25,25 @@ function formatRelative(iso: string): string {
 interface RadarCardProps {
   item: RadarItem
   onClick: (item: RadarItem) => void
+  onDelete: (itemId: string) => void
 }
 
-export function RadarCard({ item, onClick }: RadarCardProps) {
+export function RadarCard({ item, onClick, onDelete }: RadarCardProps) {
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!confirm(`Excluir "${item.titulo}"?`)) return
+    setDeleting(true)
+    const result = await deleteRadarItem(item.id)
+    if ('error' in result) {
+      console.error(result.error)
+      setDeleting(false)
+    } else {
+      onDelete(item.id)
+    }
+  }
+
   return (
     <div
       role="button"
@@ -33,23 +51,34 @@ export function RadarCard({ item, onClick }: RadarCardProps) {
       onClick={() => onClick(item)}
       onKeyDown={(e) => e.key === 'Enter' && onClick(item)}
       className={cn(
-        'relative rounded-lg border bg-card shadow-sm cursor-pointer transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        item.exigeAcao && 'border-l-4 border-l-amber-500'
+        'group relative rounded-lg border bg-card shadow-sm cursor-pointer transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        item.exigeAcao && 'border-l-4 border-l-amber-500',
+        deleting && 'opacity-50 pointer-events-none'
       )}
     >
+      {/* Botão excluir — aparece no hover */}
+      <button
+        onClick={handleDelete}
+        disabled={deleting}
+        className="absolute top-2 right-2 z-10 hidden group-hover:flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+        aria-label="Excluir item"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+
       <div className="p-4 space-y-2.5">
-        {/* Row 1: tipo + urgência (prioridade visual máxima) */}
+        {/* Row 1: tipo + urgência */}
         <div className="flex items-center gap-1.5">
           <RadarTipoBadge tipo={item.tipo} />
           <RadarUrgenciaBadge urgencia={item.urgencia} />
         </div>
 
         {/* Row 2: título */}
-        <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug">
+        <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug pr-4">
           {item.titulo}
         </p>
 
-        {/* Row 3: caso + cliente — discretos, mesma linha quando possível */}
+        {/* Row 3: caso + cliente */}
         <div className="space-y-0.5">
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <BriefcaseBusiness className="h-3 w-3 shrink-0 text-muted-foreground/60" />
@@ -61,7 +90,7 @@ export function RadarCard({ item, onClick }: RadarCardProps) {
           </div>
         </div>
 
-        {/* Row 4: rodapé — status, origem e tempo no mesmo nível, todos discretos */}
+        {/* Row 4: rodapé */}
         <div className="flex items-center gap-2 pt-0.5">
           <RadarStatusBadge status={item.status} />
           {item.exigeAcao && (

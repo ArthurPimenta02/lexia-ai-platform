@@ -552,11 +552,11 @@ Supabase clients prontos para uso no App Router. Auth backend real com onboardin
 - [ ] `supabase/seed.sql` — 1 tenant, 2 usuários (admin + lawyer), 6 estágios padrão, 3 clientes, 5 leads, 2 casos, 2 processos vinculados, 5 radar items
 
 **Verificação**
-- [ ] `supabase db push` aplica todas as migrations sem erro
-- [ ] RLS bloqueia select sem token autenticado
-- [ ] RLS bloqueia acesso entre tenants diferentes
+- [x] `supabase db push` aplica todas as migrations sem erro
+- [x] RLS bloqueia select sem token autenticado
+- [x] RLS bloqueia acesso entre tenants diferentes
 - [ ] Seeds inseridos com sucesso
-- [ ] Build Next.js passa limpo
+- [x] Build Next.js passa limpo
 
 **Commit final:**
 ```
