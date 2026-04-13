@@ -2,10 +2,10 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 /**
- * proxy.ts — Next.js 16+ route proxy (renamed from middleware.ts).
- * Proteção de rotas + refresh de sessão Supabase via cookies.
+ * proxy.ts — Proteção de rotas + refresh de sessão Supabase via cookies.
+ * Next.js 16+ usa "proxy.ts" como nova convenção (substitui "middleware.ts").
  */
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -72,7 +72,7 @@ export async function proxy(request: NextRequest) {
   return supabaseResponse
 }
 
-export const proxyConfig = {
+export const config = {
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],

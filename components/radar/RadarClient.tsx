@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, useRef } from 'react'
 import { RadarFilters } from './RadarFilters'
 import { RadarList } from './RadarList'
 import { RadarItemDetail } from './RadarItemDetail'
-import { MOCK_RADAR } from '@/lib/mock/radar'
+import { useRealtimeRadar } from '@/lib/hooks/useRealtimeRadar'
+import { markResolved, markInAnalysis, deleteRadarItem } from '@/actions/radar'
 import type { RadarItem, RadarStatus, RadarTipo, RadarUrgencia } from '@/types/radar'
 
 const PERIOD_MS: Record<'hoje' | '7dias' | '30dias' | 'tudo', number> = {
@@ -14,8 +15,13 @@ const PERIOD_MS: Record<'hoje' | '7dias' | '30dias' | 'tudo', number> = {
   tudo: Infinity,
 }
 
-export function RadarClient() {
-  const [items, setItems] = useState<RadarItem[]>(MOCK_RADAR)
+interface RadarClientProps {
+  initialItems: RadarItem[]
+  tenantId: string | undefined
+}
+
+export function RadarClient({ initialItems, tenantId }: RadarClientProps) {
+  const [items, setItems] = useState<RadarItem[]>(initialItems)
   const [selectedItem, setSelectedItem] = useState<RadarItem | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
 
@@ -26,10 +32,25 @@ export function RadarClient() {
   const [filterExigeAcao, setFilterExigeAcao] = useState<'todos' | 'sim' | 'nao'>('todos')
   const [filterPeriodo, setFilterPeriodo] = useState<'hoje' | '7dias' | '30dias' | 'tudo'>('tudo')
 
+  // Set de IDs para deduplicação no Realtime — inicializado com os itens SSR
+  const existingIdsRef = useRef<Set<string>>(new Set(initialItems.map((i) => i.id)))
+
+  const handleNewItem = useCallback((item: RadarItem) => {
+    // Deduplicação: ignora se já existe no estado atual
+    if (existingIdsRef.current.has(item.id)) return
+    existingIdsRef.current.add(item.id)
+    setItems((prev) => [item, ...prev])
+  }, [])
+
+  // Realtime: novos itens aparecem no topo automaticamente
+  useRealtimeRadar(tenantId, handleNewItem, existingIdsRef.current)
+
   const casosDisponiveis = useMemo(() => {
     const seen = new Map<string, { id: string; titulo: string }>()
     for (const r of items) {
-      if (!seen.has(r.casoId)) seen.set(r.casoId, { id: r.casoId, titulo: r.casoTitulo })
+      if (r.casoId && !seen.has(r.casoId)) {
+        seen.set(r.casoId, { id: r.casoId, titulo: r.casoTitulo })
+      }
     }
     return Array.from(seen.values())
   }, [items])
@@ -76,7 +97,10 @@ export function RadarClient() {
     }
   }
 
-  function handleResolve(itemId: string) {
+  async function handleResolve(itemId: string) {
+    const original = items.find((r) => r.id === itemId)
+    if (!original) return
+
     const now = new Date().toISOString()
     setItems((prev) =>
       prev.map((r) =>
@@ -85,6 +109,37 @@ export function RadarClient() {
           : r
       )
     )
+
+    const result = await markResolved(itemId)
+    if ('error' in result) {
+      console.error('handleResolve:', result.error)
+      setItems((prev) => prev.map((r) => (r.id === itemId ? original : r)))
+    }
+  }
+
+  function handleDelete(itemId: string) {
+    existingIdsRef.current.delete(itemId)
+    setItems((prev) => prev.filter((r) => r.id !== itemId))
+    if (selectedItem?.id === itemId) {
+      setSheetOpen(false)
+      setTimeout(() => setSelectedItem(null), 300)
+    }
+  }
+
+  async function handleMarkInAnalysis(itemId: string) {
+    const original = items.find((r) => r.id === itemId)
+    if (!original) return
+
+    setItems((prev) =>
+      prev.map((r) =>
+        r.id === itemId ? ({ ...r, status: 'em_analise' as RadarStatus }) : r
+      )
+    )
+    const result = await markInAnalysis(itemId)
+    if ('error' in result) {
+      console.error('handleMarkInAnalysis:', result.error)
+      setItems((prev) => prev.map((r) => (r.id === itemId ? original : r)))
+    }
   }
 
   return (
@@ -112,13 +167,15 @@ export function RadarClient() {
         {hasFilters && ' (filtrado)'}
       </div>
 
-      <RadarList items={filtered} onItemClick={handleItemClick} />
+      <RadarList items={filtered} onItemClick={handleItemClick} onDeleteItem={handleDelete} />
 
       <RadarItemDetail
         item={selectedItem}
         open={sheetOpen}
         onOpenChange={handleSheetOpenChange}
         onResolve={handleResolve}
+        onMarkInAnalysis={handleMarkInAnalysis}
+        onDelete={handleDelete}
       />
     </div>
   )

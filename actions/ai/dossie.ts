@@ -1,7 +1,7 @@
 'use server'
 
 import { generateText } from 'ai'
-import { anthropic } from '@ai-sdk/anthropic'
+import { openai } from '@ai-sdk/openai'
 import { createClient } from '@/lib/supabase/server'
 import { getCaso } from '@/actions/casos'
 import { revalidatePath } from 'next/cache'
@@ -92,14 +92,15 @@ Regras:
 
   try {
     const { text } = await generateText({
-      model: anthropic('claude-sonnet-4.6'),
+      model: openai('gpt-4o'),
       prompt,
       maxOutputTokens: 1500,
     })
 
     let parsed: unknown
     try {
-      parsed = JSON.parse(text.trim())
+      const clean = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
+      parsed = JSON.parse(clean)
     } catch {
       console.error('generateDossie: JSON inválido:', text)
       return { error: 'A IA retornou uma resposta em formato inválido. Tente novamente.' }

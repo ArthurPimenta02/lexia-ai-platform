@@ -11,10 +11,9 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Loader2 } from 'lucide-react'
+import { createPrazo, getTenantUsers, type CreatePrazoData } from '@/actions/radar'
 import type { RadarItem } from '@/types/radar'
-
-// Placeholder até Radar backend conectar usuários reais (M13+)
-const RESPONSAVEIS_DISPONIVEIS: string[] = []
 
 type TipoPrazo =
   | 'recursal'
@@ -40,7 +39,7 @@ const TIPOS_PRAZO: Record<TipoPrazo, string> = {
 interface FormState {
   titulo: string
   dataLimite: string
-  responsavel: string
+  responsavelId: string
   tipo: TipoPrazo
   observacoes: string
 }
@@ -55,7 +54,7 @@ interface RadarCriarPrazoDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   item: RadarItem | null
-  onSave: (data: FormState & { casoId: string; casoTitulo: string }) => void
+  onSave: (data: { titulo: string; dataLimite: string; tipo: string }) => void
 }
 
 export function RadarCriarPrazoDialog({
@@ -67,21 +66,33 @@ export function RadarCriarPrazoDialog({
   const [form, setForm] = useState<FormState>({
     titulo: '',
     dataLimite: defaultDataLimite(),
-    responsavel: RESPONSAVEIS_DISPONIVEIS[0],
+    responsavelId: '',
     tipo: 'outro',
     observacoes: '',
   })
   const [submitted, setSubmitted] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null)
+  const [users, setUsers] = useState<{ id: string; name: string; role: string }[]>([])
+
+  // Busca usuários do tenant quando o dialog abre
+  useEffect(() => {
+    if (!open) return
+    getTenantUsers().then((result) => {
+      if ('users' in result) setUsers(result.users)
+    })
+  }, [open])
 
   useEffect(() => {
     if (open && item) {
       setSubmitted(false)
+      setServerError(null)
       setForm({
         titulo: item.proximoPasso.length > 80
           ? item.proximoPasso.slice(0, 80)
           : item.proximoPasso,
         dataLimite: defaultDataLimite(),
-        responsavel: RESPONSAVEIS_DISPONIVEIS[0],
+        responsavelId: '',
         tipo: 'outro',
         observacoes: '',
       })
@@ -92,15 +103,36 @@ export function RadarCriarPrazoDialog({
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitted(true)
+    setServerError(null)
+
     if (!form.titulo.trim() || !form.dataLimite) return
-    onSave({
-      ...form,
-      casoId: item!.casoId,
-      casoTitulo: item!.casoTitulo,
-    })
+    if (!item) return
+
+    setSaving(true)
+
+    const data: CreatePrazoData = {
+      titulo: form.titulo.trim(),
+      dataLimite: form.dataLimite,
+      tipo: form.tipo,
+      observacoes: form.observacoes.trim() || undefined,
+      responsavelId: form.responsavelId || undefined,
+      casoId: item.casoId,
+      radarItemId: item.id,
+      radarItemTitulo: item.titulo,
+    }
+
+    const result = await createPrazo(data)
+    setSaving(false)
+
+    if ('error' in result) {
+      setServerError(result.error)
+      return
+    }
+
+    onSave({ titulo: form.titulo.trim(), dataLimite: form.dataLimite, tipo: form.tipo })
     onOpenChange(false)
   }
 
@@ -121,6 +153,12 @@ export function RadarCriarPrazoDialog({
           </div>
         )}
 
+        {serverError && (
+          <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400">
+            {serverError}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4 py-1">
           {/* Título do prazo */}
           <div className="space-y-1.5">
@@ -134,6 +172,7 @@ export function RadarCriarPrazoDialog({
               placeholder="Ex: Protocolar réplica à contestação"
               aria-invalid={fieldError(form.titulo)}
               className={fieldError(form.titulo) ? 'border-red-400 focus-visible:ring-red-400' : ''}
+              disabled={saving}
             />
             {fieldError(form.titulo) && (
               <p className="text-xs text-red-500">Descrição é obrigatória</p>
@@ -148,6 +187,7 @@ export function RadarCriarPrazoDialog({
                 id="rp-tipo"
                 value={form.tipo}
                 onChange={(e) => set('tipo', e.target.value as TipoPrazo)}
+                disabled={saving}
                 className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {(Object.keys(TIPOS_PRAZO) as TipoPrazo[]).map((t) => (
@@ -168,6 +208,7 @@ export function RadarCriarPrazoDialog({
                 min={new Date().toISOString().slice(0, 10)}
                 aria-invalid={submitted && !form.dataLimite}
                 className={submitted && !form.dataLimite ? 'border-red-400 focus-visible:ring-red-400' : ''}
+                disabled={saving}
               />
               {submitted && !form.dataLimite && (
                 <p className="text-xs text-red-500">Data limite é obrigatória</p>
@@ -180,12 +221,14 @@ export function RadarCriarPrazoDialog({
             <Label htmlFor="rp-responsavel">Responsável</Label>
             <select
               id="rp-responsavel"
-              value={form.responsavel}
-              onChange={(e) => set('responsavel', e.target.value)}
+              value={form.responsavelId}
+              onChange={(e) => set('responsavelId', e.target.value)}
+              disabled={saving}
               className="flex h-9 w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
-              {RESPONSAVEIS_DISPONIVEIS.map((r) => (
-                <option key={r} value={r}>{r}</option>
+              <option value="">Sem responsável</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>
           </div>
@@ -199,15 +242,18 @@ export function RadarCriarPrazoDialog({
               onChange={(e) => set('observacoes', e.target.value)}
               rows={3}
               placeholder="Contexto adicional, instrução para o responsável..."
+              disabled={saving}
               className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
             />
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
               Cancelar
             </Button>
-            <Button type="submit">Criar prazo</Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Criando…</> : 'Criar prazo'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

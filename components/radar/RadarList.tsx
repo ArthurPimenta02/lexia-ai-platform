@@ -35,9 +35,10 @@ function sortItems(items: RadarItem[]): RadarItem[] {
 interface RadarListProps {
   items: RadarItem[]
   onItemClick: (item: RadarItem) => void
+  onDeleteItem: (itemId: string) => void
 }
 
-export function RadarList({ items, onItemClick }: RadarListProps) {
+export function RadarList({ items, onItemClick, onDeleteItem }: RadarListProps) {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -78,7 +79,7 @@ export function RadarList({ items, onItemClick }: RadarListProps) {
             {/* Cards grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {groupItems.map((item) => (
-                <RadarCard key={item.id} item={item} onClick={onItemClick} />
+                <RadarCard key={item.id} item={item} onClick={onItemClick} onDelete={onDeleteItem} />
               ))}
             </div>
           </div>

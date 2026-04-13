@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { summarizeRadarItem } from '@/actions/ai/radar-summary'
+import { addTimelineEvent } from '@/actions/casos'
+import { deleteRadarItem } from '@/actions/radar'
 import {
   Sheet,
   SheetContent,
@@ -29,6 +32,8 @@ import {
   CalendarPlus,
   RefreshCw,
   ListPlus,
+  Loader2,
+  Trash2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { RadarTipoBadge, RadarUrgenciaBadge, RadarStatusBadge } from './RadarBadge'
@@ -80,13 +85,22 @@ interface RadarItemDetailProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onResolve?: (itemId: string) => void
+  onMarkInAnalysis?: (itemId: string) => void
+  onDelete?: (itemId: string) => void
 }
 
-export function RadarItemDetail({ item, open, onOpenChange, onResolve }: RadarItemDetailProps) {
+export function RadarItemDetail({ item, open, onOpenChange, onResolve, onMarkInAnalysis, onDelete }: RadarItemDetailProps) {
   const router = useRouter()
   const [resumoExpanded, setResumoExpanded] = useState(true)
   const [prazoDialogOpen, setPrazoDialogOpen] = useState(false)
   const [confirmedAction, setConfirmedAction] = useState<string | null>(null)
+  const [generatingSummary, setGeneratingSummary] = useState(false)
+  const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [localSummary, setLocalSummary] = useState<{
+    resumo: string; explicacaoPratica: string; proximoPasso: string
+    riscoSeNaoAgir: string; impactoNoCaso: string
+  } | null>(null)
+  const [prazos, setPrazos] = useState<{ titulo: string; dataLimite: string; tipo: string }[]>([])
 
   function flashConfirm(key: string) {
     setConfirmedAction(key)
@@ -109,12 +123,38 @@ export function RadarItemDetail({ item, open, onOpenChange, onResolve }: RadarIt
     setPrazoDialogOpen(true)
   }
 
-  function handlePrazoSaved() {
+  function handlePrazoSaved(prazo: { titulo: string; dataLimite: string; tipo: string }) {
     flashConfirm('prazo')
+    setPrazoDialogOpen(false)
+    setPrazos((prev) => [...prev, prazo])
   }
 
-  function handleAdicionarTimeline() {
-    flashConfirm('timeline')
+  async function handleAdicionarTimeline() {
+    if (!item || !item.casoId) return
+    const result = await addTimelineEvent(item.casoId, {
+      tipo: 'movimentacao_processual',
+      titulo: item.titulo,
+      descricao: item.descricao || item.resumoIA || 'Movimentação registrada via Radar.',
+      urgencia: item.urgencia === 'Alta' ? 'Alta' : item.urgencia === 'Media' ? 'Média' : 'Baixa',
+    })
+    if ('error' in result) {
+      console.error('handleAdicionarTimeline:', result.error)
+    } else {
+      flashConfirm('timeline')
+    }
+  }
+
+  async function handleGerarResumo() {
+    if (!item) return
+    setGeneratingSummary(true)
+    setSummaryError(null)
+    const result = await summarizeRadarItem(item.id)
+    setGeneratingSummary(false)
+    if ('error' in result) {
+      setSummaryError(result.error)
+    } else {
+      setLocalSummary(result.summary)
+    }
   }
 
   function handleMarcarResolvido() {
@@ -122,6 +162,17 @@ export function RadarItemDetail({ item, open, onOpenChange, onResolve }: RadarIt
     if (confirm(`Marcar "${item.titulo}" como resolvido?`)) {
       onResolve?.(item.id)
       onOpenChange(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!item) return
+    if (!confirm(`Excluir "${item.titulo}"? Esta ação não pode ser desfeita.`)) return
+    const result = await deleteRadarItem(item.id)
+    if ('error' in result) {
+      console.error('handleDelete:', result.error)
+    } else {
+      onDelete?.(item.id)
     }
   }
 
@@ -259,6 +310,15 @@ export function RadarItemDetail({ item, open, onOpenChange, onResolve }: RadarIt
                 Marcar como resolvido
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 h-8 text-xs text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950/30 ml-auto"
+              onClick={handleDelete}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Excluir
+            </Button>
           </div>
         </div>
 
@@ -290,16 +350,47 @@ export function RadarItemDetail({ item, open, onOpenChange, onResolve }: RadarIt
               )}
             </button>
 
-            {resumoExpanded && (
+            {resumoExpanded && (() => {
+              const resumo = localSummary?.resumo || item.resumoIA
+              const explicacao = localSummary?.explicacaoPratica || item.explicacaoPratica
+              const proximo = localSummary?.proximoPasso || item.proximoPasso
+              const risco = localSummary?.riscoSeNaoAgir || item.riscoSeNaoAgir
+              const impacto = localSummary?.impactoNoCaso || item.impactoNoCaso
+              const semResumo = !resumo && !explicacao && !proximo
+
+              if (semResumo) return (
+                <div className="px-4 pb-4 border-t border-violet-100 dark:border-violet-800/40 pt-4 flex flex-col items-center gap-3 py-6">
+                  <p className="text-sm text-muted-foreground text-center">
+                    Resumo ainda não gerado para este item.
+                  </p>
+                  {summaryError && (
+                    <p className="text-xs text-red-500 text-center">{summaryError}</p>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-2 text-violet-700 border-violet-300 hover:bg-violet-50 dark:text-violet-400 dark:border-violet-700"
+                    onClick={handleGerarResumo}
+                    disabled={generatingSummary}
+                  >
+                    {generatingSummary
+                      ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Gerando…</>
+                      : <><Sparkles className="h-3.5 w-3.5" />Gerar Resumo Inteligente</>
+                    }
+                  </Button>
+                </div>
+              )
+
+              return (
               <div className="px-4 pb-4 space-y-4 border-t border-violet-100 dark:border-violet-800/40 pt-4">
                 {/* Resumo do andamento */}
                 <Section icon={Info} title="Resumo do andamento" iconColor="#7C3AED">
-                  {item.resumoIA}
+                  {resumo}
                 </Section>
 
                 {/* Explicação prática */}
                 <Section icon={Zap} title="Explicação prática" iconColor="#2563EB">
-                  {item.explicacaoPratica}
+                  {explicacao}
                 </Section>
 
                 {/* Urgência e ação */}
@@ -336,21 +427,22 @@ export function RadarItemDetail({ item, open, onOpenChange, onResolve }: RadarIt
                     </span>
                   </div>
                   <p className="pl-7 text-sm text-amber-900 dark:text-amber-200 leading-relaxed">
-                    {item.proximoPasso}
+                    {proximo}
                   </p>
                 </div>
 
                 {/* Impacto no caso */}
                 <Section icon={TrendingUp} title="Impacto no caso" iconColor="#059669">
-                  {item.impactoNoCaso}
+                  {impacto}
                 </Section>
 
                 {/* Risco se não agir */}
                 <Section icon={ShieldAlert} title="Risco se não agir" iconColor="#EF4444">
-                  {item.riscoSeNaoAgir}
+                  {risco}
                 </Section>
               </div>
-            )}
+            )
+            })()}
           </div>
 
           {/* Descrição completa */}
@@ -384,6 +476,31 @@ export function RadarItemDetail({ item, open, onOpenChange, onResolve }: RadarIt
               </div>
             )}
           </div>
+
+          {/* Prazos criados nesta sessão */}
+          {prazos.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Prazos criados
+              </p>
+              <div className="rounded-lg border border-border/60 divide-y divide-border/50">
+                {prazos.map((p, i) => (
+                  <div key={i} className="flex items-center justify-between px-4 py-2.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                      <span className="text-sm text-foreground truncate">{p.titulo}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0 ml-3">
+                      {new Date(p.dataLimite).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground px-1">
+                Aparecerá em /calendar quando o módulo estiver conectado.
+              </p>
+            </div>
+          )}
         </div>
       </SheetContent>
     </Sheet>
@@ -392,7 +509,7 @@ export function RadarItemDetail({ item, open, onOpenChange, onResolve }: RadarIt
       open={prazoDialogOpen}
       onOpenChange={setPrazoDialogOpen}
       item={item}
-      onSave={handlePrazoSaved}
+      onSave={(p) => handlePrazoSaved({ titulo: p.titulo, dataLimite: p.dataLimite, tipo: p.tipo })}
     />
     </>
   )
