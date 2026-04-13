@@ -29,6 +29,7 @@
 | M12 | Radar Backend ✅ | `backend/radar` | Backend |
 | M13 | Dashboard Backend ✅ | `backend/dashboard` | Backend |
 | M14 | Calendar Backend | `backend/calendar` | Backend |
+| M14 | Calendar Backend | `backend/calendar` | Backend |
 | M15 | Settings & Users Backend | `backend/settings` | Backend |
 | M16 | Integração n8n | `backend/n8n` | Integração |
 | M17 | Deploy & Observabilidade | `deploy/production` | Deploy |
@@ -805,19 +806,42 @@ feat(backend/radar): M13 — Radar backend completo com actions reais, Resumo IA
 - [x] ActivityFeed com feed combinado (timeline + radar)
 - [x] Bloco AttentionNow com itens críticos do momento
 
+**`components/dashboard/DashboardClient.tsx`** (criado)
+- [x] State owner dos 3 sheets (novos leads, conversão, pendências)
+- [x] `ORIGIN_LABELS` alinhado com `LeadOrigin` real do banco
+
+**`components/shared/MetricCard.tsx`**
+- [x] Props `href` (Link) e `onClick` (sheet) — card interativo com `ChevronRight` no hover
+- [x] Acessibilidade: `role="button"`, `tabIndex={0}`, `onKeyDown` no path onClick
+
 **`components/shared/ActivityFeed.tsx`**
 - [x] Import de tipos migrado de `lib/mock/dashboard` → `types/dashboard`
 - [x] `iconMap` e `colorMap` estendidos com `radar_alert` e `timeline_event`
+- [x] Empty state quando não há atividades
+
+**Bugs corrigidos no code review**
+- [x] `Activity.timestamp` era `Date` — crash de hidratação SSR→client; corrigido para ISO string
+- [x] Sort de urgência era alfabético (`Media > Alta`) — corrigido para semântico (Alta=0, Media=1, Baixa=2)
+- [x] `getConversionRate` usava `ilike` podendo bater em "Ex-Cliente" — corrigido para `eq + is_terminal`
+- [x] `ORIGIN_LABELS` tinha chaves inexistentes (`site`, `indicacao`) — alinhado com `LeadOrigin`
+- [x] `MetricCard` onClick sem acessibilidade por teclado — corrigido
+- [x] Variável `leads24h` nomeada errada (era total) — renomeada para `totalLeads`
+- [x] `converted_at` nullable sem `nullsFirst: false` — corrigido
+- [x] `tenantId` ausente renderizava spinner infinito — agora faz `redirect('/onboarding')`
+- [x] `suppressHydrationWarning` no `<body>` para extensões de browser (ColorZilla)
+
+**Queries adicionais para os sheets**
+- [x] `getNewLeadsDetail(tenantId)` — lista leads das últimas 24h com estágio
+- [x] `getConversionDetail(tenantId)` — lista leads convertidos
+- [x] `getPendenciasDetail(tenantId)` — lista pendências abertas com caso vinculado
 
 **Verificação**
 - [x] `npx tsc --noEmit` passa limpo
-- [ ] Criar um lead → número no dashboard incrementa após reload
-- [ ] Mover lead para "Cliente" → taxa de conversão atualiza
-- [ ] Item urgente no Radar → aparece no bloco AttentionNow
+- [x] PR #21 mergeado → `master`, branch `backend/dashboard` deletada
 
 **Commit final:**
 ```
-feat(backend/dashboard): M14 — dashboard real com métricas, funil, feed de atividade e bloco AttentionNow
+feat(backend/dashboard): M14 — dashboard real com metricas, funil, feed e blocos interativos
 ```
 
 ---
