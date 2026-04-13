@@ -10,10 +10,10 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { type ActivityType, type Activity } from '@/lib/mock/dashboard'
+import { type ActivityType, type Activity } from '@/types/dashboard'
 
-function formatRelativeTime(date: Date, now: number): string {
-  const diffMs = now - date.getTime()
+function formatRelativeTime(isoString: string, now: number): string {
+  const diffMs = now - new Date(isoString).getTime()
   const diffMin = Math.floor(diffMs / 60000)
   if (diffMin < 1) return 'agora mesmo'
   if (diffMin < 60) return `há ${diffMin} min`
@@ -29,6 +29,8 @@ const iconMap: Record<ActivityType, LucideIcon> = {
   stage_changed: ArrowRightLeft,
   handoff: AlertTriangle,
   appointment: CalendarCheck,
+  radar_alert: AlertTriangle,
+  timeline_event: ArrowRightLeft,
 }
 
 const colorMap: Record<ActivityType, string> = {
@@ -37,6 +39,8 @@ const colorMap: Record<ActivityType, string> = {
   stage_changed: 'text-[#8B5CF6] bg-purple-50 dark:bg-purple-950/30',
   handoff: 'text-warning bg-orange-50 dark:bg-orange-950/30',
   appointment: 'text-success bg-emerald-50 dark:bg-emerald-950/30',
+  radar_alert: 'text-error bg-red-50 dark:bg-red-950/30',
+  timeline_event: 'text-neutral bg-gray-100 dark:bg-gray-800/40',
 }
 
 interface ActivityFeedProps {
@@ -60,26 +64,32 @@ export function ActivityFeed({ activities }: ActivityFeedProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <ul className="space-y-3">
-          {activities.map((activity) => {
-            const Icon = iconMap[activity.type]
-            const color = colorMap[activity.type]
-            return (
-              <li key={activity.id} className="flex items-start gap-3">
-                <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${color}`}>
-                  <Icon className="h-4 w-4" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">{activity.title}</p>
-                  <p className="text-xs text-muted-foreground">{activity.description}</p>
-                </div>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {now ? formatRelativeTime(activity.timestamp, now) : '—'}
-                </span>
-              </li>
-            )
-          })}
-        </ul>
+        {activities.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            Nenhuma atividade recente.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {activities.map((activity) => {
+              const Icon = iconMap[activity.type]
+              const color = colorMap[activity.type]
+              return (
+                <li key={activity.id} className="flex items-start gap-3">
+                  <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${color}`}>
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground">{activity.title}</p>
+                    <p className="text-xs text-muted-foreground">{activity.description}</p>
+                  </div>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {now ? formatRelativeTime(activity.timestamp, now) : '—'}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </CardContent>
     </Card>
   )

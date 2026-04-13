@@ -27,7 +27,7 @@
 | M10 | Leads & Kanban Backend ✅ | `backend/leads` | Backend |
 | M11 | Casos Backend ✅ | `backend/casos` | Backend |
 | M12 | Radar Backend ✅ | `backend/radar` | Backend |
-| M13 | Dashboard Backend | `backend/dashboard` | Backend |
+| M13 | Dashboard Backend ✅ | `backend/dashboard` | Backend |
 | M14 | Calendar Backend | `backend/calendar` | Backend |
 | M15 | Settings & Users Backend | `backend/settings` | Backend |
 | M16 | Integração n8n | `backend/n8n` | Integração |
@@ -768,38 +768,56 @@ feat(backend/radar): M13 — Radar backend completo com actions reais, Resumo IA
 
 ---
 
-### M14 · Dashboard Backend
+### M13 · Dashboard Backend ✅ merged → `master`
 
-**Branch:** `backend/dashboard`
-**Objetivo:** Métricas e feeds do dashboard com dados reais do banco.
+**Branch:** `backend/dashboard` ✅ merged → `master`
+**Objetivo:** Dashboard 100% real — métricas do banco, funil de leads real, feed de atividade combinado, bloco executivo "Precisa de atenção agora".
 
 #### Entregas
 
-**Queries**
-- [ ] Criar `lib/queries/dashboard.ts`:
-  - [ ] `getNewLeadsToday(tenantId)` — leads criados nas últimas 24h
-  - [ ] `getLeadsByStage(tenantId)` — contagem por estágio para o funil
-  - [ ] `getConversionRate(tenantId)` — leads em "Cliente" / total de leads (exceto "Perdido")
-  - [ ] `getActiveCasos(tenantId)` — casos ativos no momento
-  - [ ] `getRadarUrgentItems(tenantId)` — itens do radar com urgência Alta não resolvidos
-  - [ ] `getRecentActivity(tenantId, limit)` — últimos eventos de `agent_logs` + `caso_timeline`
-  - [ ] `getPendingNotifications(userId)` — notificações não lidas
+**Tipos — `types/dashboard.ts`** (criado)
+- [x] `ActivityType` — 7 tipos incluindo `radar_alert` e `timeline_event`
+- [x] `Activity` — interface compartilhada entre queries e `ActivityFeed`
+- [x] `FunnelStage`, `DashboardMetrics` — tipagem das métricas
+- [x] `AttentionNowData`, `AttentionRadarItem`, `AttentionPendencia` — bloco executivo
 
-**Dashboard conectado**
-- [ ] `app/(dashboard)/dashboard/page.tsx` vira Server Component que chama as queries em paralelo (`Promise.all`)
-- [ ] MetricCards recebem dados reais (incluindo casos ativos e alertas do radar)
-- [ ] FunnelChart recebe contagens reais por estágio
-- [ ] ActivityFeed recebe eventos reais
+**Queries — `lib/queries/dashboard.ts`** (criado)
+- [x] `getNewLeadsToday(tenantId)` — leads 24h + delta vs 24h anteriores
+- [x] `getLeadsByStage(tenantId)` — contagem por estágio real com nome e cor do banco
+- [x] `getConversionRate(tenantId)` — leads no estágio "Cliente" / total (1 casa decimal)
+- [x] `getActiveCasos(tenantId)` — casos não encerrados e não deletados
+- [x] `getOpenPendencias(tenantId)` — pendências abertas em todos os casos
+- [x] `getUrgentRadarItems(tenantId)` — radar_items urgência Alta não resolvidos
+- [x] `getRecentActivity(tenantId, limit)` — feed combinado: `caso_timeline` + `radar_items`, ordenado por data
+- [x] `getAttentionNow(tenantId)` — até 3 radar urgentes + até 3 pendências abertas críticas
+- [x] `getDashboardMetrics(tenantId)` — agrega todas as métricas em `Promise.all`
+
+**Componente — `components/dashboard/AttentionNow.tsx`** (criado)
+- [x] Bloco executivo com radar urgente e pendências abertas
+- [x] Links diretos para `/radar` e `/casos/[id]`
+- [x] Estado vazio amigável quando não há itens críticos
+
+**Dashboard conectado — `app/(dashboard)/dashboard/page.tsx`**
+- [x] Server Component async com `Promise.all` para todas as queries
+- [x] `tenantId` extraído de `user.user_metadata?.tenant_id` (padrão do projeto)
+- [x] 6 MetricCards: Novos Leads (24h), Total Leads, Taxa de Conversão, Casos Ativos, Pendências em Aberto, Alertas Urgentes
+- [x] FunnelChart com dados reais dos estágios do tenant
+- [x] ActivityFeed com feed combinado (timeline + radar)
+- [x] Bloco AttentionNow com itens críticos do momento
+
+**`components/shared/ActivityFeed.tsx`**
+- [x] Import de tipos migrado de `lib/mock/dashboard` → `types/dashboard`
+- [x] `iconMap` e `colorMap` estendidos com `radar_alert` e `timeline_event`
 
 **Verificação**
-- [ ] Criar um lead → número no dashboard incrementa
+- [x] `npx tsc --noEmit` passa limpo
+- [ ] Criar um lead → número no dashboard incrementa após reload
 - [ ] Mover lead para "Cliente" → taxa de conversão atualiza
-- [ ] Item urgente no Radar → aparece no dashboard como alerta
-- [ ] Build passa limpo
+- [ ] Item urgente no Radar → aparece no bloco AttentionNow
 
 **Commit final:**
 ```
-feat(backend): dashboard — real metrics, funnel data, radar alerts, activity feed from database
+feat(backend/dashboard): M14 — dashboard real com métricas, funil, feed de atividade e bloco AttentionNow
 ```
 
 ---
