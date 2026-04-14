@@ -1,7 +1,12 @@
 import { UsersClient } from '@/components/settings/UsersClient'
-import { MOCK_USERS, MOCK_INVITES } from '@/lib/mock/users'
+import { getUsersAndInvites } from '@/actions/users'
 
-export default function SettingsUsersPage() {
+export default async function SettingsUsersPage() {
+  const result = await getUsersAndInvites()
+  const error = 'error' in result ? result.error : null
+  const users = 'error' in result ? [] : result.users
+  const invites = 'error' in result ? [] : result.invites
+
   return (
     <div className="max-w-4xl">
       <div className="border-b border-border px-6 py-5">
@@ -11,7 +16,13 @@ export default function SettingsUsersPage() {
         </p>
       </div>
       <div className="p-6">
-        <UsersClient initialUsers={MOCK_USERS} initialInvites={MOCK_INVITES} />
+        {error ? (
+          <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </p>
+        ) : (
+          <UsersClient initialUsers={users} initialInvites={invites} />
+        )}
       </div>
     </div>
   )

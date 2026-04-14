@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Plus, Search, MoreHorizontal, UserX, Pencil, MailIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Plus, Search, MoreHorizontal, UserX, Pencil, MailIcon, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -18,6 +19,13 @@ import { UserEditModal } from '@/components/shared/UserEditModal'
 import { INVITE_STATUS_LABELS, USER_STATUS_LABELS, ROLE_OPTIONS } from '@/types/user'
 import type { User, UserRole, UserStatus, UserInvite, InviteStatus } from '@/types/user'
 import { cn } from '@/lib/utils'
+import {
+  deactivateUser,
+  deleteInvite,
+  deleteUser,
+  inviteUser,
+  updateUserRole,
+} from '@/actions/users'
 
 function getInitials(name: string) {
   return name
@@ -47,12 +55,15 @@ interface UsersClientProps {
 }
 
 export function UsersClient({ initialUsers, initialInvites }: UsersClientProps) {
-  const [users, setUsers] = useState<User[]>(initialUsers)
-  const [invites, setInvites] = useState<UserInvite[]>(initialInvites)
+  const router = useRouter()
+  const users = initialUsers
+  const invites = initialInvites
   const [search, setSearch] = useState('')
   const [filterRole, setFilterRole] = useState<UserRole | ''>('')
   const [inviteOpen, setInviteOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<User | undefined>()
+  const [isPending, setIsPending] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const filteredUsers = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -63,31 +74,80 @@ export function UsersClient({ initialUsers, initialInvites }: UsersClientProps) 
     })
   }, [users, search, filterRole])
 
-  function handleInvite(data: { name: string; email: string; role: UserRole }) {
-    const newInvite: UserInvite = {
-      id: `invite-${Date.now()}`,
-      tenantId: 'tenant-1',
-      email: data.email,
-      name: data.name,
-      role: data.role,
-      status: 'pending',
-      invitedAt: new Date().toISOString(),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      invitedBy: 'Rodrigo Ferreira',
+  async function handleInvite(data: { name: string; email: string; role: UserRole }) {
+    setActionError(null)
+    setIsPending(true)
+    const result = await inviteUser(data)
+    setIsPending(false)
+
+    if ('error' in result) {
+      setActionError(result.error)
+      return
     }
-    setInvites((prev) => [newInvite, ...prev])
+
+    setInviteOpen(false)
+    router.refresh()
   }
 
-  function handleEdit(userId: string, data: { role: UserRole; status: UserStatus }) {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, role: data.role, status: data.status } : u))
-    )
+  async function handleEdit(userId: string, data: { role: UserRole; status: UserStatus }) {
+    setActionError(null)
+    setIsPending(true)
+
+    const roleResult = await updateUserRole(userId, data.role)
+    if ('error' in roleResult) {
+      setIsPending(false)
+      setActionError(roleResult.error)
+      return
+    }
+
+    if (data.status === 'inactive') {
+      const deactivateResult = await deactivateUser(userId)
+      if ('error' in deactivateResult) {
+        setIsPending(false)
+        setActionError(deactivateResult.error)
+        return
+      }
+    }
+
+    setIsPending(false)
+    setEditTarget(undefined)
+    router.refresh()
   }
 
-  function handleDeactivate(userId: string) {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === userId ? { ...u, status: 'inactive' } : u))
-    )
+  async function handleDeactivate(userId: string) {
+    setActionError(null)
+    setIsPending(true)
+    const result = await deactivateUser(userId)
+    setIsPending(false)
+    if ('error' in result) {
+      setActionError(result.error)
+      return
+    }
+    router.refresh()
+  }
+
+  async function handleDeleteUser(userId: string) {
+    setActionError(null)
+    setIsPending(true)
+    const result = await deleteUser(userId)
+    setIsPending(false)
+    if ('error' in result) {
+      setActionError(result.error)
+      return
+    }
+    router.refresh()
+  }
+
+  async function handleDeleteInvite(inviteId: string) {
+    setActionError(null)
+    setIsPending(true)
+    const result = await deleteInvite(inviteId)
+    setIsPending(false)
+    if ('error' in result) {
+      setActionError(result.error)
+      return
+    }
+    router.refresh()
   }
 
   const pendingInvites = invites.filter((i) => i.status === 'pending' || i.status === 'expired')
@@ -119,11 +179,17 @@ export function UsersClient({ initialUsers, initialInvites }: UsersClientProps) 
           </select>
         </div>
 
-        <Button onClick={() => setInviteOpen(true)} size="sm" className="h-9 gap-2 shrink-0">
+        <Button onClick={() => setInviteOpen(true)} size="sm" className="h-9 gap-2 shrink-0" disabled={isPending}>
           <Plus className="h-4 w-4" />
           Convidar usuário
         </Button>
       </div>
+
+      {actionError ? (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {actionError}
+        </p>
+      ) : null}
 
       {/* Users table */}
       <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
@@ -203,6 +269,7 @@ export function UsersClient({ initialUsers, initialInvites }: UsersClientProps) 
                       <DropdownMenuContent align="end" className="w-44">
                         <DropdownMenuItem
                           onClick={() => setEditTarget(user)}
+                          disabled={isPending}
                           className="gap-2 text-sm"
                         >
                           <Pencil className="h-3.5 w-3.5" />
@@ -215,10 +282,36 @@ export function UsersClient({ initialUsers, initialInvites }: UsersClientProps) 
                               onClick={() => {
                                 if (confirm(`Desativar ${user.name}?`)) handleDeactivate(user.id)
                               }}
+                              disabled={isPending}
                               className="gap-2 text-sm text-red-600 focus:text-red-600"
                             >
                               <UserX className="h-3.5 w-3.5" />
                               Desativar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                if (confirm(`Excluir ${user.name} do workspace?`)) handleDeleteUser(user.id)
+                              }}
+                              disabled={isPending}
+                              className="gap-2 text-sm text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {user.status !== 'active' && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => {
+                                if (confirm(`Excluir ${user.name} do workspace?`)) handleDeleteUser(user.id)
+                              }}
+                              disabled={isPending}
+                              className="gap-2 text-sm text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              Excluir
                             </DropdownMenuItem>
                           </>
                         )}
@@ -244,6 +337,7 @@ export function UsersClient({ initialUsers, initialInvites }: UsersClientProps) 
                   <th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground sm:table-cell">Perfil</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground">Status</th>
                   <th className="hidden px-4 py-3 text-left text-xs font-medium text-muted-foreground md:table-cell">Enviado por</th>
+                  <th className="w-10 px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -268,6 +362,23 @@ export function UsersClient({ initialUsers, initialInvites }: UsersClientProps) 
                     </td>
                     <td className="hidden px-4 py-3 md:table-cell">
                       <span className="text-xs text-muted-foreground">{invite.invitedBy}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-red-600 hover:text-red-600"
+                        disabled={isPending}
+                        onClick={() => {
+                          if (confirm(`Excluir convite para ${invite.email}?`)) {
+                            void handleDeleteInvite(invite.id)
+                          }
+                        }}
+                        aria-label="Excluir convite"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </td>
                   </tr>
                 ))}

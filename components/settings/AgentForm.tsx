@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { Save, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,6 +14,7 @@ import {
 } from '@/types/settings'
 import type { AgentSettings, AgentTone, AgentChannel, PracticeArea } from '@/types/settings'
 import { cn } from '@/lib/utils'
+import { updateAgentSettings } from '@/actions/settings'
 
 interface AgentFormProps {
   initial: AgentSettings
@@ -22,6 +23,8 @@ interface AgentFormProps {
 export function AgentForm({ initial }: AgentFormProps) {
   const [form, setForm] = useState(initial)
   const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isPending, startTransition] = useTransition()
   const [handoffKeywordsInput, setHandoffKeywordsInput] = useState(
     initial.handoffRules.autoHandoffOnKeywords.join(', ')
   )
@@ -74,17 +77,26 @@ export function AgentForm({ initial }: AgentFormProps) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // Parse keywords on save
     const keywords = handoffKeywordsInput
       .split(',')
       .map((k) => k.trim())
       .filter(Boolean)
-    setForm((prev) => ({
-      ...prev,
-      handoffRules: { ...prev.handoffRules, autoHandoffOnKeywords: keywords },
-    }))
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    const nextForm: AgentSettings = {
+      ...form,
+      handoffRules: { ...form.handoffRules, autoHandoffOnKeywords: keywords },
+    }
+    setForm(nextForm)
+    setError(null)
+    startTransition(async () => {
+      const result = await updateAgentSettings(nextForm)
+      if ('error' in result) {
+        setSaved(false)
+        setError(result.error)
+        return
+      }
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    })
   }
 
   return (
@@ -374,19 +386,21 @@ export function AgentForm({ initial }: AgentFormProps) {
 
       {/* ── Footer ──────────────────────────────────────────────── */}
       <div className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-4 py-3">
-        {saved ? (
+        {error ? (
+          <span className="text-sm font-medium text-destructive">{error}</span>
+        ) : saved ? (
           <span className="flex items-center gap-1.5 text-sm font-medium text-emerald-600">
             <CheckCircle2 className="h-4 w-4" />
             Configurações salvas com sucesso
           </span>
         ) : (
           <span className="text-xs text-muted-foreground">
-            As configurações são salvas apenas localmente (mock).
+            Configuracoes persistem no banco deste tenant.
           </span>
         )}
-        <Button type="submit" size="sm" className="gap-2">
+        <Button type="submit" size="sm" className="gap-2" disabled={isPending}>
           <Save className="h-4 w-4" />
-          Salvar configurações
+          {isPending ? 'Salvando...' : 'Salvar configuracoes'}
         </Button>
       </div>
     </form>

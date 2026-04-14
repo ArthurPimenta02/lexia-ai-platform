@@ -45,8 +45,27 @@ export default async function proxy(request: NextRequest) {
   }
 
   // ── Rotas públicas (sem sessão requerida) ──────────────────────────────────
-  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password']
+  const publicRoutes = ['/login', '/signup', '/forgot-password', '/reset-password', '/accept-invite']
   const isPublicRoute = publicRoutes.some((r) => pathname.startsWith(r))
+  const allowWhenAuthenticatedPublicRoutes = ['/reset-password', '/accept-invite']
+  const canStayOnPublicRouteWhenAuthenticated = allowWhenAuthenticatedPublicRoutes.some((r) =>
+    pathname.startsWith(r)
+  )
+
+  let isInactiveUser = false
+  if (user) {
+    const tenantId = user.user_metadata?.tenant_id as string | undefined
+    if (tenantId) {
+      const { data: membership } = await supabase
+        .from('users')
+        .select('status')
+        .eq('tenant_id', tenantId)
+        .eq('id', user.id)
+        .maybeSingle()
+
+      isInactiveUser = membership?.status === 'inactive'
+    }
+  }
 
   // Sem sessão → redireciona para /login (exceto rotas públicas)
   if (!user && !isPublicRoute) {
@@ -56,7 +75,14 @@ export default async function proxy(request: NextRequest) {
   }
 
   // Com sessão → não deixa acessar login/signup novamente
-  if (user && isPublicRoute) {
+  if (user && isInactiveUser && !isPublicRoute) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('error', 'inactive_user')
+    return NextResponse.redirect(url)
+  }
+
+  if (user && !isInactiveUser && isPublicRoute && !canStayOnPublicRouteWhenAuthenticated) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)

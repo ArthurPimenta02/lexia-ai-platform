@@ -65,3 +65,24 @@ export function canManage(role: UserRole): boolean {
 export function isAdmin(role: UserRole): boolean {
   return role === 'admin'
 }
+
+/** Pode gerenciar configuracoes do tenant (office, agent, integrations). */
+export function canManageSettings(role: UserRole): boolean {
+  return role === 'admin' || role === 'manager'
+}
+
+/** Pode gerenciar usuarios e convites. */
+export function canManageUsers(role: UserRole): boolean {
+  return role === 'admin' || role === 'manager'
+}
+
+/**
+ * Regra de alvo para gestao de usuarios:
+ * - admin gerencia todos
+ * - manager nao gerencia admin
+ */
+export function canManageTargetUser(actorRole: UserRole, targetRole: UserRole): boolean {
+  if (actorRole === 'admin') return true
+  if (actorRole === 'manager') return targetRole !== 'admin'
+  return false
+}

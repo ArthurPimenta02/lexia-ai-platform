@@ -14,6 +14,7 @@ export interface OfficeSettings {
   tenantId: string
   name: string                  // official/legal name
   displayName: string           // name shown in the UI / to clients
+  officeCode: string
   cnpj: string
   email: string
   phone: string

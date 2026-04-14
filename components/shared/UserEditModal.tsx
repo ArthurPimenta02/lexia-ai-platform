@@ -22,7 +22,7 @@ interface UserEditModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   user: User | undefined
-  onSave: (userId: string, data: EditFormState) => void
+  onSave: (userId: string, data: EditFormState) => Promise<void>
 }
 
 export function UserEditModal({ open, onOpenChange, user, onSave }: UserEditModalProps) {
@@ -30,15 +30,15 @@ export function UserEditModal({ open, onOpenChange, user, onSave }: UserEditModa
 
   useEffect(() => {
     if (open && user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({ role: user.role, status: user.status })
     }
   }, [open, user])
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!user) return
-    onSave(user.id, form)
-    onOpenChange(false)
+    await onSave(user.id, form)
   }
 
   return (

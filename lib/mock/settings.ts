@@ -5,6 +5,7 @@ export const MOCK_OFFICE: OfficeSettings = {
   tenantId: 'tenant-1',
   name: 'Ferreira & Associados Advocacia Ltda.',
   displayName: 'Ferreira Advocacia',
+  officeCode: 'FER12345',
   cnpj: '12.345.678/0001-90',
   email: 'contato@ferreiraadvocacia.com.br',
   phone: '(11) 3456-7890',

@@ -9,12 +9,14 @@ interface NavItemProps {
   href: string
   label: string
   icon: LucideIcon
+  activePrefix?: string
   onClick?: () => void
 }
 
-export function NavItem({ href, label, icon: Icon, onClick }: NavItemProps) {
+export function NavItem({ href, label, icon: Icon, activePrefix, onClick }: NavItemProps) {
   const pathname = usePathname()
-  const isActive = pathname === href || pathname.startsWith(href + '/')
+  const matchPrefix = activePrefix ?? href
+  const isActive = pathname === matchPrefix || pathname.startsWith(matchPrefix + '/')
 
   return (
     <Link
