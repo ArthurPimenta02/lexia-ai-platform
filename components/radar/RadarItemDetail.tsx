@@ -22,7 +22,6 @@ import {
   Milestone,
   ShieldAlert,
   BriefcaseBusiness,
-  User,
   ChevronDown,
   ChevronUp,
   ExternalLink,
@@ -165,6 +164,11 @@ export function RadarItemDetail({ item, open, onOpenChange, onResolve, onMarkInA
     }
   }
 
+  function handleMarcarEmAnalise() {
+    if (!item) return
+    onMarkInAnalysis?.(item.id)
+  }
+
   async function handleDelete() {
     if (!item) return
     if (!confirm(`Excluir "${item.titulo}"? Esta ação não pode ser desfeita.`)) return
@@ -196,22 +200,18 @@ export function RadarItemDetail({ item, open, onOpenChange, onResolve, onMarkInA
             {item.titulo}
           </SheetTitle>
 
-          {/* Contexto — caso + cliente (SheetDescription para acessibilidade, visualmente oculto) */}
+          {/* Contexto — identificação do processo/item monitorado */}
           <SheetDescription className="sr-only">
-            {item.casoTitulo} — {item.cliente}
+            {item.contextoLinha || item.casoTitulo || item.cliente || item.processoNumero || item.processoExternalId || item.titulo}
           </SheetDescription>
 
-          {/* Contexto visual — caso + cliente */}
-          <div className="flex flex-col gap-1 mb-4">
-            <span className="flex items-center gap-2 text-sm text-foreground/80">
-              <BriefcaseBusiness className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              {item.casoTitulo}
-            </span>
-            <span className="flex items-center gap-2 text-sm text-muted-foreground">
-              <User className="h-3.5 w-3.5 shrink-0" />
-              {item.cliente}
-            </span>
-          </div>
+          {/* Contexto visual — linha única, discreta */}
+          {item.contextoLinha && (
+            <div className="flex items-start gap-2 mb-4 text-sm text-muted-foreground">
+              <BriefcaseBusiness className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="leading-relaxed">{item.contextoLinha}</span>
+            </div>
+          )}
 
           {/* Linha de metadados — discretos */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-4 text-xs text-muted-foreground">
@@ -284,6 +284,17 @@ export function RadarItemDetail({ item, open, onOpenChange, onResolve, onMarkInA
               <RefreshCw className="h-3.5 w-3.5" />
               Atualizar caso
             </Button>
+            {item.status === 'novo' && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 h-8 text-xs"
+                onClick={handleMarcarEmAnalise}
+              >
+                <TrendingUp className="h-3.5 w-3.5" />
+                Marcar em análise
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { BriefcaseBusiness, AlertCircle, User, Trash2 } from 'lucide-react'
+import { AlertCircle, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { RadarTipoBadge, RadarUrgenciaBadge, RadarStatusBadge } from './RadarBadge'
 import { RADAR_ORIGEM_LABELS } from '@/types/radar'
@@ -78,17 +78,12 @@ export function RadarCard({ item, onClick, onDelete }: RadarCardProps) {
           {item.titulo}
         </p>
 
-        {/* Row 3: caso + cliente */}
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <BriefcaseBusiness className="h-3 w-3 shrink-0 text-muted-foreground/60" />
-            <span className="truncate">{item.casoTitulo}</span>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <User className="h-3 w-3 shrink-0 text-muted-foreground/60" />
-            <span className="truncate">{item.cliente}</span>
-          </div>
-        </div>
+        {/* Row 3: contexto do processo monitorado */}
+        {item.contextoLinha && (
+          <p className="text-xs text-muted-foreground line-clamp-1 pr-4">
+            {item.contextoLinha}
+          </p>
+        )}
 
         {/* Row 4: rodapé */}
         <div className="flex items-center gap-2 pt-0.5">

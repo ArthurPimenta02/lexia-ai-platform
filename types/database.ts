@@ -16,7 +16,7 @@ export type LeadUrgency = 'Alta' | 'Media' | 'Baixa'
 
 export type CasoStatus = 'Ativo' | 'Suspenso' | 'Encerrado' | 'Arquivado'
 export type CasoArea =
-  | 'Trabalhista' | 'Cível' | 'Família' | 'Criminal' | 'Empresarial'
+  | 'A definir' | 'Trabalhista' | 'Cível' | 'Família' | 'Criminal' | 'Empresarial'
   | 'Tributário' | 'Previdenciário' | 'Consumidor' | 'Imobiliário' | 'Ambiental'
 
 export type TimelineEventType =
@@ -49,6 +49,7 @@ export interface TenantRow {
   id: string
   name: string
   display_name: string
+  office_code: string
   cnpj: string | null
   email: string
   phone: string | null
@@ -159,7 +160,8 @@ export interface LeadMessageRow {
 export interface CasoRow {
   id: string
   tenant_id: string
-  client_id: string
+  client_id: string | null
+  origin_processo_id: string | null
   responsible_id: string | null
   numero_interno: string | null
   titulo: string
@@ -274,6 +276,7 @@ export interface ProcessPartyRow {
 
 export interface ProcessUpdateRow {
   id: string
+  tenant_id: string
   processo_id: string
   tipo: 'movimentacao' | 'publicacao' | 'despacho' | 'decisao' | 'sentenca' | 'acordao' | 'intimacao' | 'outros'
   titulo: string
@@ -281,10 +284,12 @@ export interface ProcessUpdateRow {
   data_movimentacao: string
   external_id: string | null
   external_source: SyncSource
+  dedupe_key: string
   payload_raw: Record<string, unknown> | null
   ai_summary: Record<string, unknown> | null
   processed: boolean
   processed_at: string | null
+  sync_error: string | null
   created_at: string
 }
 
@@ -294,6 +299,7 @@ export interface RadarItemRow {
   caso_id: string | null
   processo_id: string | null
   process_update_id: string | null
+  source_update_id: string | null
   tipo: RadarTipo
   urgencia: RadarUrgencia
   status: RadarStatus

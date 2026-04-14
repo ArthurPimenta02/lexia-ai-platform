@@ -2,6 +2,7 @@
 
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { buildRadarContextLine } from '@/types/radar'
 import type { RadarItem, RadarTipo, RadarUrgencia, RadarStatus } from '@/types/radar'
 import type { RadarItemRow, AppointmentType } from '@/types/database'
 
@@ -9,17 +10,22 @@ import type { RadarItemRow, AppointmentType } from '@/types/database'
 
 function rowToRadarItem(row: RadarItemRow & {
   casos?: { titulo: string; clients?: { name: string } | null } | null
+  processos?: { cnj_number: string; external_id: string | null } | null
 }): RadarItem {
   const aiSummary = row.ai_summary as Record<string, string> | null
+  const casoTitulo = row.caso_titulo ?? row.casos?.titulo ?? ''
+  const cliente = row.cliente_nome ?? row.casos?.clients?.name ?? ''
+  const processoNumero = row.processos?.cnj_number ?? undefined
+  const processoExternalId = row.processos?.external_id ?? undefined
 
-  return {
+  const item: RadarItem = {
     id: row.id,
     tipo: row.tipo as RadarTipo,
     titulo: row.titulo,
     descricao: row.descricao ?? undefined,
     casoId: row.caso_id ?? '',
-    casoTitulo: row.caso_titulo ?? row.casos?.titulo ?? '',
-    cliente: row.cliente_nome ?? row.casos?.clients?.name ?? '',
+    casoTitulo,
+    cliente,
     data: row.created_at,
     urgencia: row.urgencia as RadarUrgencia,
     exigeAcao: row.exige_acao,
@@ -32,6 +38,13 @@ function rowToRadarItem(row: RadarItemRow & {
     impactoNoCaso: aiSummary?.impactoNoCaso ?? '',
     dataResolucao: row.resolvido_em ?? undefined,
     referenciaExterna: row.referencia_externa ?? undefined,
+    processoNumero,
+    processoExternalId,
+  }
+
+  return {
+    ...item,
+    contextoLinha: buildRadarContextLine(item),
   }
 }
 
@@ -67,6 +80,10 @@ export async function getRadarItems(
       casos (
         titulo,
         clients ( name )
+      ),
+      processos (
+        cnj_number,
+        external_id
       )
     `)
     .eq('tenant_id', tenantId)
@@ -93,6 +110,7 @@ export async function getRadarItems(
 
   let items = (data ?? []).map((row) => rowToRadarItem(row as RadarItemRow & {
     casos?: { titulo: string; clients?: { name: string } | null } | null
+    processos?: { cnj_number: string; external_id: string | null } | null
   }))
 
   // Filtro de busca textual (feito no cliente por ser simples ILIKE — evita round-trip extra)
