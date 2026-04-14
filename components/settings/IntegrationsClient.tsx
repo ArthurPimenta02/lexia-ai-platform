@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { disconnectGoogleCalendar } from '@/actions/google-calendar'
+import { setIntegrationEnabled } from '@/actions/settings'
 import { IntegrationCard } from './IntegrationCard'
 import type { Integration } from '@/types/settings'
 
@@ -14,13 +15,34 @@ export function IntegrationsClient({ initial }: IntegrationsClientProps) {
   const router = useRouter()
   const [integrations, setIntegrations] = useState(initial)
   const [isPending, startTransition] = useTransition()
+  const [actionError, setActionError] = useState<string | null>(null)
 
   function handleToggle(id: string) {
+    const target = integrations.find((item) => item.id === id)
+    if (!target) return
+    const nextEnabled = !target.enabled
+    setActionError(null)
+
     setIntegrations((prev) =>
       prev.map((integration) =>
-        integration.id === id ? { ...integration, enabled: !integration.enabled } : integration
+        integration.id === id ? { ...integration, enabled: nextEnabled } : integration
       )
     )
+
+    startTransition(async () => {
+      const result = await setIntegrationEnabled(target.type, nextEnabled)
+      if ('error' in result) {
+        setIntegrations((prev) =>
+          prev.map((integration) =>
+            integration.id === id ? { ...integration, enabled: target.enabled } : integration
+          )
+        )
+        setActionError(result.error)
+        return
+      }
+
+      router.refresh()
+    })
   }
 
   function handlePrimaryAction(integration: Integration) {
@@ -32,9 +54,10 @@ export function IntegrationsClient({ initial }: IntegrationsClientProps) {
     }
 
     startTransition(async () => {
+      setActionError(null)
       const result = await disconnectGoogleCalendar()
       if ('error' in result) {
-        alert(result.error)
+        setActionError(result.error ?? 'Erro ao atualizar integracao.')
         return
       }
 
@@ -58,6 +81,9 @@ export function IntegrationsClient({ initial }: IntegrationsClientProps) {
         <p className="text-xs text-muted-foreground">
           Atualizando integração do Google Calendar…
         </p>
+      ) : null}
+      {actionError ? (
+        <p className="text-xs text-destructive">{actionError}</p>
       ) : null}
     </div>
   )

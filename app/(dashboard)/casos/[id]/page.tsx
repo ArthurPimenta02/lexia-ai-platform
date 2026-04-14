@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { getLinkedAppointments } from '@/actions/appointments'
 import { getCaso, getUsers, getLeadsSummary } from '@/actions/casos'
 import { DossieClient } from '@/components/casos/DossieClient'
 import type { Metadata } from 'next'
@@ -17,9 +18,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function CasoDetalhePage({ params }: PageProps) {
   const { id } = await params
-  const [caso, users, leads] = await Promise.all([getCaso(id), getUsers(), getLeadsSummary()])
+  const [caso, users, leads, appointments] = await Promise.all([
+    getCaso(id),
+    getUsers(),
+    getLeadsSummary(),
+    getLinkedAppointments({ casoId: id }),
+  ])
 
   if (!caso) notFound()
 
-  return <DossieClient caso={caso} users={users} leads={leads} />
+  return <DossieClient caso={caso} users={users} leads={leads} appointments={appointments} />
 }

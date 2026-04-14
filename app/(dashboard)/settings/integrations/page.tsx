@@ -1,5 +1,9 @@
-import { getSettingsIntegrations } from '@/actions/google-calendar'
+import { redirect } from 'next/navigation'
+import { getSettingsIntegrations } from '@/actions/settings'
 import { IntegrationsClient } from '@/components/settings/IntegrationsClient'
+import { createClient } from '@/lib/supabase/server'
+import { canManageSettings } from '@/lib/permissions'
+import type { UserRole } from '@/types/database'
 
 interface SettingsIntegrationsPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>
@@ -33,6 +37,41 @@ function getBannerMessage(status?: string, reason?: string) {
 export default async function SettingsIntegrationsPage({
   searchParams,
 }: SettingsIntegrationsPageProps) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const tenantId = user?.user_metadata?.tenant_id as string | undefined
+
+  if (!tenantId || !user) {
+    redirect('/login')
+  }
+
+  const { data: membership } = await supabase
+    .from('users')
+    .select('role')
+    .eq('tenant_id', tenantId)
+    .eq('id', user.id)
+    .is('deleted_at', null)
+    .maybeSingle()
+
+  const role = (membership?.role as UserRole | undefined) ?? 'viewer'
+  if (!canManageSettings(role)) {
+    return (
+      <div className="max-w-2xl">
+        <div className="border-b border-border px-6 py-5">
+          <h1 className="text-lg font-semibold">Integracoes</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Conecte o escritorio as ferramentas que sua equipe ja usa.
+          </p>
+        </div>
+        <div className="p-6">
+          <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            Voce nao tem permissao para acessar esta tela.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   const [integrations, rawParams] = await Promise.all([
     getSettingsIntegrations(),
     searchParams ?? Promise.resolve({}),

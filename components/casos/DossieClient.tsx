@@ -732,10 +732,10 @@ interface DossieClientProps {
   caso: Caso
   users: { id: string; name: string }[]
   leads: { id: string; name: string }[]
-  appointments: CalendarEvent[]
+  appointments?: CalendarEvent[]
 }
 
-export function DossieClient({ caso: initialCaso, users, leads, appointments }: DossieClientProps) {
+export function DossieClient({ caso: initialCaso, users, leads, appointments = [] }: DossieClientProps) {
   const router = useRouter()
   const [caso, setCaso] = useState<Caso>(initialCaso)
   const [editOpen, setEditOpen] = useState(false)

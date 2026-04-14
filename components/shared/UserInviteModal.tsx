@@ -30,7 +30,7 @@ const DEFAULT: InviteFormState = {
 interface UserInviteModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onInvite: (data: InviteFormState) => void
+  onInvite: (data: InviteFormState) => Promise<void>
 }
 
 export function UserInviteModal({ open, onOpenChange, onInvite }: UserInviteModalProps) {
@@ -39,6 +39,7 @@ export function UserInviteModal({ open, onOpenChange, onInvite }: UserInviteModa
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm(DEFAULT)
       setSubmitted(false)
     }
@@ -48,12 +49,11 @@ export function UserInviteModal({ open, onOpenChange, onInvite }: UserInviteModa
     setForm((prev) => ({ ...prev, [key]: value }))
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitted(true)
     if (!form.name.trim() || !form.email.trim()) return
-    onInvite(form)
-    onOpenChange(false)
+    await onInvite(form)
   }
 
   const err = (val: string) => submitted && !val.trim()

@@ -16,18 +16,21 @@ import {
   UserPlus,
   MessageSquare,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from './StatusBadge'
 import { LeadFormDialog } from './LeadFormDialog'
 import { LeadTriagePanel } from './LeadTriagePanel'
 import { updateLead } from '@/actions/leads'
 import type { Lead, LeadActivity, LeadStage, LeadFormData } from '@/types/lead'
+import type { CalendarEvent } from '@/types/calendar'
+import { EVENT_STATUS_CONFIG, EVENT_TYPE_CONFIG } from '@/types/calendar'
 
 interface LeadDetailClientProps {
   lead: Lead
   activities: LeadActivity[]
   stages: LeadStage[]
+  appointments: CalendarEvent[]
 }
 
 const ACTIVITY_ICONS: Record<
@@ -51,7 +54,12 @@ const ACTIVITY_COLORS: Record<LeadActivity['type'], string> = {
   message:           'text-slate-500 dark:text-slate-400 bg-slate-500/10 dark:bg-slate-500/20',
 }
 
-export function LeadDetailClient({ lead, activities, stages }: LeadDetailClientProps) {
+export function LeadDetailClient({
+  lead,
+  activities,
+  stages,
+  appointments,
+}: LeadDetailClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [currentLead, setCurrentLead] = useState<Lead>(lead)
@@ -167,6 +175,56 @@ export function LeadDetailClient({ lead, activities, stages }: LeadDetailClientP
         </Card>
       </div>
 
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
+          <CardTitle>Compromissos vinculados</CardTitle>
+          <Link href="/calendar" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
+            Abrir no calendário
+          </Link>
+        </CardHeader>
+        <CardContent>
+          {appointments.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Nenhum compromisso vinculado a este lead.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {appointments.map((appointment) => (
+                <div
+                  key={appointment.id}
+                  className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0 space-y-1">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {appointment.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatAppointmentDateTime(appointment)}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <AppointmentPill
+                      label={EVENT_TYPE_CONFIG[appointment.type].label}
+                      className="border-border bg-background text-foreground"
+                    />
+                    <AppointmentPill
+                      label={EVENT_STATUS_CONFIG[appointment.status].label}
+                      className={`${EVENT_STATUS_CONFIG[appointment.status].bgColor} ${EVENT_STATUS_CONFIG[appointment.status].textColor}`}
+                    />
+                    <Link
+                      href="/calendar"
+                      className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'h-8 px-2 text-xs' })}
+                    >
+                      Ver no calendário
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Activity timeline */}
       {activities.length > 0 && (
         <Card>
@@ -236,5 +294,33 @@ function InfoRow({
         <p className="truncate text-sm font-medium text-foreground">{value}</p>
       </div>
     </div>
+  )
+}
+
+function formatAppointmentDateTime(appointment: CalendarEvent) {
+  const date = new Date(appointment.start)
+  const dateLabel = date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+
+  if (appointment.allDay) {
+    return `${dateLabel} · Dia inteiro`
+  }
+
+  const timeLabel = date.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  return `${dateLabel} às ${timeLabel}`
+}
+
+function AppointmentPill({ label, className }: { label: string; className: string }) {
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2 py-1 text-[11px] font-medium ${className}`}>
+      {label}
+    </span>
   )
 }

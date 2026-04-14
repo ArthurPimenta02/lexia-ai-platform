@@ -11,15 +11,19 @@ import { LeadsTable } from './LeadsTable'
 import { LeadFormDialog } from './LeadFormDialog'
 import { DeleteLeadDialog } from './DeleteLeadDialog'
 import type { Lead, LeadStage, LeadFormData } from '@/types/lead'
+import type { UserRole } from '@/types/database'
+import { usePermissions } from '@/lib/hooks/usePermissions'
 
 interface LeadsClientProps {
   initialLeads: Lead[]
   stages: LeadStage[]
+  currentRole: UserRole
 }
 
-export function LeadsClient({ initialLeads, stages }: LeadsClientProps) {
+export function LeadsClient({ initialLeads, stages, currentRole }: LeadsClientProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const permissions = usePermissions(currentRole)
 
   const [leads, setLeads] = useState<Lead[]>(initialLeads)
   const [search, setSearch] = useState('')
@@ -141,10 +145,12 @@ export function LeadsClient({ initialLeads, stages }: LeadsClientProps) {
           </select>
         </div>
 
-        <Button onClick={() => setCreateOpen(true)} disabled={isPending}>
-          <Plus className="h-4 w-4" />
-          Novo Lead
-        </Button>
+        {permissions.canWrite ? (
+          <Button onClick={() => setCreateOpen(true)} disabled={isPending}>
+            <Plus className="h-4 w-4" />
+            Novo Lead
+          </Button>
+        ) : null}
       </div>
 
       {/* Error */}
