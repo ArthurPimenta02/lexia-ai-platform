@@ -54,7 +54,7 @@ export async function getCasos(filters: CasoFilters = {}): Promise<CasoSummary[]
     numero_interno: string | null
     area: string
     status: string
-    client_id: string
+    client_id: string | null
     responsible_id: string | null
     lead_id: string | null
     proxima_acao: string | null
@@ -132,7 +132,7 @@ export async function getCasos(filters: CasoFilters = {}): Promise<CasoSummary[]
     numeroInterno: row.numero_interno ?? null,
     area: row.area as CasoSummary['area'],
     status: row.status as CasoSummary['status'],
-    clienteId: row.client_id ?? '',
+    clienteId: row.client_id ?? null,
     clienteNome: row.clients?.name ?? '—',
     responsavelId: row.responsible_id ?? null,
     responsavelNome: row.users?.name ?? null,
@@ -164,7 +164,7 @@ export async function getCaso(id: string): Promise<Caso | null> {
     status: string
     descricao: string | null
     observacoes: string | null
-    client_id: string
+    client_id: string | null
     responsible_id: string | null
     lead_id: string | null
     proxima_acao: string | null
@@ -227,7 +227,7 @@ export async function getCaso(id: string): Promise<Caso | null> {
       .from('case_process_links')
       .select(`
         id, is_primary,
-        processos ( id, cnj_number, tribunal, vara, assunto, classe, data_ultima_mov )
+        processos ( id, cnj_number, tribunal, vara, assunto, classe, data_ultima_mov, external_source, sync_status, last_synced_at, sync_error )
       `)
       .eq('caso_id', id),
   ])
@@ -235,7 +235,11 @@ export async function getCaso(id: string): Promise<Caso | null> {
   type TimelineRaw = { id: string; tipo: string; titulo: string; descricao: string | null; autor_nome: string | null; urgencia: string | null; created_at: string }
   type PendenciaRaw = { id: string; descricao: string; prazo: string | null; responsavel: string | null; urgencia: string; resolvida: boolean; created_at: string }
   type DocumentoRaw = { id: string; nome: string; tipo: string; tamanho: string | null; criado_por: string; created_at: string }
-  type ProcessLinkRaw = { id: string; is_primary: boolean; processos: Pick<ProcessoRow, 'id' | 'cnj_number' | 'tribunal' | 'vara' | 'assunto' | 'classe' | 'data_ultima_mov'> | null }
+  type ProcessLinkRaw = {
+    id: string
+    is_primary: boolean
+    processos: Pick<ProcessoRow, 'id' | 'cnj_number' | 'tribunal' | 'vara' | 'assunto' | 'classe' | 'data_ultima_mov' | 'external_source' | 'sync_status' | 'last_synced_at' | 'sync_error'> | null
+  }
 
   const timeline: TimelineEvent[] = ((timelineResult.data ?? []) as unknown as TimelineRaw[]).map((t) => ({
     id: t.id,
@@ -279,6 +283,10 @@ export async function getCaso(id: string): Promise<Caso | null> {
         ultimaMovimentacao: proc.data_ultima_mov ?? null,
         resumoUltimaMovimentacao: proc.assunto ?? proc.classe ?? '—',
         isPrimary: link.is_primary,
+        externalSource: proc.external_source,
+        syncStatus: proc.sync_status,
+        lastSyncedAt: proc.last_synced_at ?? null,
+        syncError: proc.sync_error ?? null,
       }
     })
 
@@ -302,7 +310,7 @@ export async function getCaso(id: string): Promise<Caso | null> {
     status: row.status as Caso['status'],
     descricao: row.descricao ?? null,
     observacoes: row.observacoes ?? null,
-    clienteId: row.client_id ?? '',
+    clienteId: row.client_id ?? null,
     clienteNome: row.clients?.name ?? '—',
     responsavelId: row.responsible_id ?? null,
     responsavelNome: row.users?.name ?? null,

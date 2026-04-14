@@ -1,15 +1,4 @@
-# Status Update - 2026-04-13
-
-- [x] M14 Calendar Backend concluido.
-- [x] Integracao Google Calendar fase 1 concluida nesta entrega.
-  OAuth inicial, persistencia segura em `integrations` + `integration_secrets`, sync Lexia -> Google em create/update/cancel e sync manual pelo modulo Calendar.
-- [x] Validacao da feature: `npx tsc --noEmit`, `eslint` direcionado aos arquivos da feature e `next build` em workspace isolado.
-- [ ] M15 Settings & Users Backend continua como proximo grande bloco ainda nao consolidado.
-- [ ] Lint global do repositorio ainda possui erros preexistentes fora do escopo desta entrega.
-
----
-
-# Lexia AI — Plano de Execução
+﻿# Lexia AI — Plano de Execução
 
 > **Estratégia:** Interface primeiro com dados mock → Backend real → Integração n8n → Deploy
 >
@@ -39,9 +28,8 @@
 | M11 | Casos Backend ✅ | `backend/casos` | Backend |
 | M12 | Radar Backend ✅ | `backend/radar` | Backend |
 | M13 | Dashboard Backend ✅ | `backend/dashboard` | Backend |
-| M14 | Calendar Backend | `backend/calendar` | Backend |
-| M14 | Calendar Backend | `backend/calendar` | Backend |
-| M15 | Settings & Users Backend | `backend/settings` | Backend |
+| M14 | Calendar Backend ✅ | `backend/calendar` | Backend |
+| M15 | Settings & Users Backend ✅ | `backend/settings` | Backend |
 | M16 | Integração n8n | `backend/n8n` | Integração |
 | M17 | Deploy & Observabilidade | `deploy/production` | Deploy |
 
@@ -74,7 +62,7 @@
 
 **Commit final:**
 ```
-feat: project bootstrap — Next.js 14, TypeScript strict, Tailwind, shadcn/ui, Vercel deploy
+feat: project bootstrap — Next.js 16, TypeScript strict, Tailwind, shadcn/ui, Vercel deploy
 ```
 
 ---
@@ -241,7 +229,7 @@ feat(ui): dashboard — metric cards, funnel chart, activity feed, notifications
   - [x] Nível de urgência (badge: Alta / Média / Baixa)
   - [x] Sugestão de encaminhamento interno
   - [x] Ficha estruturada gerada a partir da conversa/entrada
-- [x] Dados mockados — integração real com Claude na Fase 3
+- [x] Dados mockados — integração real com OpenAI GPT-4o na Fase 3
 
 **Verificação**
 - [x] Tabela com 15 leads sem erros de console
@@ -314,7 +302,7 @@ feat(ui/leads): tabela de leads, filtros, CRUD e página de detalhe
     - [x] Próximos marcos esperados
     - [x] Última movimentação relevante
     - [x] Contexto consolidado para retomada rápida
-  - [x] Dados mockados — integração real com Claude na Fase 3
+  - [x] Dados mockados — integração real com OpenAI GPT-4o na Fase 3
 
 **Verificação**
 - [x] Lista de casos renderiza com dados mock sem erros
@@ -587,7 +575,7 @@ feat(backend/database): schema completo — tenants, clients, leads, casos, proc
 ### M10 · Leads & Kanban Backend ✅ merged → `master`
 
 **Branch:** `backend/leads` ✅ merged → `master`
-**Objetivo:** Leads e Kanban 100% reais — dados do banco, drag-and-drop persiste no Supabase, CRUD completo, triagem IA com Claude.
+**Objetivo:** Leads e Kanban 100% reais — dados do banco, drag-and-drop persiste no Supabase, CRUD completo, triagem IA com OpenAI GPT-4o.
 
 #### Entregas
 
@@ -610,7 +598,7 @@ feat(backend/database): schema completo — tenants, clients, leads, casos, proc
 - [x] `LeadsClient.tsx` — optimistic updates + Server Actions
 - [x] `LeadFormDialog.tsx` — stages dinâmicos do banco
 - [x] `LeadDetailClient.tsx` — dados reais do lead com edição inline
-- [x] `LeadTriagePanel.tsx` — botão "Gerar triagem" chama Claude real
+- [x] `LeadTriagePanel.tsx` — botão "Gerar triagem" chama OpenAI GPT-4o real
 
 **Kanban conectado**
 - [x] `app/(dashboard)/kanban/page.tsx` — Server Component com fetch real
@@ -623,7 +611,7 @@ feat(backend/database): schema completo — tenants, clients, leads, casos, proc
 
 **Triagem IA**
 - [x] Criar `actions/ai/lead-triage.ts`:
-  - [x] `triageLead(leadId)` — chama Claude (`claude-sonnet-4.6`) com contexto do lead
+  - [x] `triageLead(leadId)` — chama OpenAI GPT-4o com contexto do lead
   - [x] Retorna: área jurídica, resumo da demanda, urgência, sugestão de encaminhamento
   - [x] Salva resultado em `leads.ai_triage` (JSONB)
 
@@ -639,7 +627,7 @@ feat(backend/database): schema completo — tenants, clients, leads, casos, proc
 **Verificação**
 - [x] Lead criado no modal aparece na tabela/kanban sem refresh manual
 - [x] Drag-and-drop persiste após recarregar a página
-- [x] Triagem retorna resultado real do Claude e salva no banco
+- [x] Triagem retorna resultado real do OpenAI GPT-4o e salva no banco
 - [x] Usuário sem sessão em `/leads` ou `/kanban` → redirecionado para `/login`
 - [x] Build `next build` passa limpo
 
@@ -653,7 +641,7 @@ feat(backend/leads): M10 — Leads & Kanban 100% real, proxy.ts, JWT fix, AI tri
 ### M11 · Casos Backend ✅ merged → `master`
 
 **Branch:** `backend/casos` ✅ merged → `master`
-**Objetivo:** Casos e dossiê 100% reais — dados do banco, linha do tempo persistida, Dossiê Inteligente alimentado pelo Claude.
+**Objetivo:** Casos e dossiê 100% reais — dados do banco, linha do tempo persistida, Dossiê Inteligente alimentado pelo OpenAI GPT-4o.
 
 #### Entregas
 
@@ -676,7 +664,7 @@ feat(backend/leads): M10 — Leads & Kanban 100% real, proxy.ts, JWT fix, AI tri
   - [x] `getUsers()` — lista usuários ativos do tenant para select de responsável
   - [x] `getLeadsSummary()` — lista leads para vínculo no form de caso
 - [x] `actions/ai/dossie.ts`:
-  - [x] `generateDossie(casoId)` — chama Claude (`claude-sonnet-4.6`) com contexto completo do caso
+  - [x] `generateDossie(casoId)` — chama OpenAI GPT-4o com contexto completo do caso
   - [x] Contexto: timeline, processos, pendências, próxima ação, área jurídica
   - [x] Salva em `casos.dossie_ia` (JSONB) com `dossie_gerado_em`
 - [x] `actions/leads.ts#deleteLead()` — corrigido: service_role + filtro manual de tenant_id
@@ -706,7 +694,7 @@ feat(backend/leads): M10 — Leads & Kanban 100% real, proxy.ts, JWT fix, AI tri
 - [x] `/casos/[id]` com ID inválido → 404
 - [x] Timeline real, pendências reais, processos reais
 - [x] Botão "Resolver" em pendência persiste após reload
-- [x] Botão "Gerar Dossiê" → resultado real do Claude exibido e salvo
+- [x] Botão "Gerar Dossiê" → resultado real do OpenAI GPT-4o exibido e salvo
 - [x] Build `next build` passa limpo (TypeScript strict)
 
 **Commit final:**
@@ -775,7 +763,7 @@ feat(backend/casos): M11 — CRUD, timeline, pendências, Dossiê IA, soft delet
 
 **Commit final:**
 ```
-feat(backend/radar): M13 — Radar backend completo com actions reais, Resumo IA, webhook e Realtime
+feat(backend/radar): M12 — Radar backend completo com actions reais, Resumo IA, webhook e Realtime
 ```
 
 ---
@@ -852,85 +840,227 @@ feat(backend/radar): M13 — Radar backend completo com actions reais, Resumo IA
 
 **Commit final:**
 ```
-feat(backend/dashboard): M14 — dashboard real com metricas, funil, feed e blocos interativos
+feat(backend/dashboard): M13 — dashboard real com metricas, funil, feed e blocos interativos
 ```
 
 ---
 
-### M15 · Calendar Backend
+### M14 · Calendar Backend ✅ merged → master
 
-**Branch:** `backend/calendar`
-**Objetivo:** Agendamentos persistindo no banco, vinculados a casos e leads, com estrutura pronta para sync Google Calendar.
+**Branch:** backend/calendar ✅ merged → master
+**Objetivo:** Conectar o calendario ao backend real e entregar a fase 1 da integracao com Google Calendar sem expandir escopo.
 
 #### Entregas
 
 **Server Actions**
-- [ ] Criar `app/actions/appointments.ts`:
-  - [ ] `getAppointments(filters)` — busca por período e usuário
-  - [ ] `createAppointment(data)` — cria compromisso
-  - [ ] `updateAppointment(id, data)` — edita
-  - [ ] `cancelAppointment(id)` — muda status para `cancelled`
+- [x] Criar actions/appointments.ts com:
+  - [x] getAppointments(filters)
+  - [x] createAppointment(data)
+  - [x] updateAppointment(id, data)
+  - [x] cancelAppointment(id)
+  - [x] syncAppointmentsWithGoogle() (forca sincronizacao manual Lexia -> Google)
+- [x] Multi-tenant e seguranca:
+  - [x] tenant_id derivado da sessao
+  - [x] validacao de vinculos caso, lead, responsavel
+  - [x] sem confiar em tenant_id do client
 
-**Calendar conectado**
-- [ ] `app/(dashboard)/calendar/page.tsx` carrega eventos reais do banco
-- [ ] Criar evento no modal chama `createAppointment()`
-- [ ] Cancelar evento no modal chama `cancelAppointment()`
-- [ ] Cor do evento reflete status real
+**Calendar conectado (SSR + UI real)**
+- [x] app/(dashboard)/calendar/page.tsx com SSR real
+- [x] components/calendar/CalendarClient.tsx conectado a dados reais
+- [x] EventCreateModalReal e EventDetailModalReal persistindo no banco
+- [x] Criar/editar/cancelar compromisso funcionando via Server Actions
 
-**Select de caso/lead no modal**
-- [ ] Campo "Caso" no `EventCreateModal` faz search em `casos` do tenant
-- [ ] Campo "Lead" opcional para compromissos na etapa comercial
+**Compatibilidade operacional**
+- [x] Vinculo opcional com caso e lead
+- [x] Compatibilidade com prazos criados pelo Radar em appointments
+- [x] Suporte a compromissos comuns e prazos no mesmo fluxo
+- [x] Appointments vinculados passaram a aparecer na tela de detalhe de Lead
+- [x] Appointments vinculados passaram a aparecer na tela de detalhe de Caso
+- [x] Empty state limpo quando lead/caso nao possuem compromissos vinculados
 
-**Verificação**
-- [ ] Criar evento → aparece no calendário no dia correto
-- [ ] Cancelar evento → muda de cor para cinza
-- [ ] Build passa limpo
+**Integracao Google Calendar (fase 1)**
+- [x] OAuth inicial:
+  - [x] app/api/integrations/google/start/route.ts
+  - [x] app/api/integrations/google/callback/route.ts
+- [x] Persistencia segura:
+  - [x] migration supabase/migrations/028_google_calendar_phase1.sql
+  - [x] metadados em integrations
+  - [x] tokens criptografados em integration_secrets
+- [x] Sync Lexia -> Google:
+  - [x] create cria evento no Google
+  - [x] update atualiza evento no Google
+  - [x] cancel reflete cancelamento no Google
+- [x] Botao Sincronizar no Calendar executa sync manual (nao redireciona mais)
 
-**Commit final:**
-```
-feat(backend): calendar — appointments CRUD, caso/lead association, status management
-```
+**Permissoes (corrigido nesta entrega)**
+- [x] Guard de permissao alinhado ao role atual em public.users.role
+- [x] admin e manager podem gerenciar/sincronizar Google Calendar
+- [x] Outros roles bloqueados (UI + backend coerentes)
+
+**Bugs da entrega encontrados e corrigidos**
+- [x] Fonte de permissao corrigida (metadata stale -> public.users.role)
+- [x] Encoding invalido que quebrava parse/build em actions/google-calendar.ts
+- [x] Botao Sincronizar corrigido (redirecionamento -> sync real)
+- [x] Guard no sync manual corrigido (admin/manager + integracao conectada)
+- [x] Lint no EventCreateModalReal corrigido (estado em efeito)
+- [x] Dropdowns, selects e superficies claras no dark mode revisados nas telas afetadas
+- [x] Bug visivel de contraste no formulario de criar lead corrigido
+- [x] Bug visivel de contraste no formulario de criar evento corrigido
+
+**Validacao executada**
+- [x] npx tsc --noEmit
+- [x] npx eslint direcionado aos arquivos alterados na feature
+- [x] next build em workspace isolado de validacao
+
+**Entrega Git**
+- [x] Branch: feat/calendar-google-phase1
+- [x] Commit: bc947dd
+- [x] PR: #22
+- [x] Merge em master: 9911d34
+- [x] Branch remota removida
+
+**Fora de escopo (preexistente / ambiental)**
+- [ ] Lint global do repositorio ainda possui erros preexistentes fora do escopo desta entrega
+- [ ] Build no workspace principal pode falhar quando .next esta lockado por processo local
 
 ---
 
-### M16 · Settings & Users Backend
+### M15 · Settings & Users Backend ✅
 
 **Branch:** `backend/settings`
-**Objetivo:** Settings e gestão de usuários 100% funcionais — dados do escritório persistidos, convites enviados, roles aplicados.
+**Objetivo:** Settings e gestao de usuarios 100% funcionais, com dados reais do escritorio, convites operacionais, roles aplicados, bloqueios de permissao coerentes e workspace refletindo o tenant real.
 
 #### Entregas
 
-**Server Actions**
-- [ ] Criar `app/actions/settings.ts`:
-  - [ ] `getTenantSettings(tenantId)` — busca dados do escritório e config do agente
-  - [ ] `updateTenantSettings(data)` — salva
-- [ ] Criar `app/actions/users.ts`:
-  - [ ] `getUsers(tenantId)` — lista usuários do tenant
-  - [ ] `inviteUser(email, name, role)` — cria usuário via Supabase Admin API + envia email
-  - [ ] `updateUserRole(userId, role)` — atualiza role
-  - [ ] `deactivateUser(userId)` — muda status para `inactive`
+**Server Actions — Settings**
+- [x] Criar `actions/settings.ts`
+- [x] `getTenantSettings()` — carrega dados reais de `tenants`, `agent_config` e claims do usuario autenticado
+- [x] `updateTenantSettings(data)` — persiste nome, display_name, contato, endereco, timezone, area principal e `logo_url`
+- [x] `updateAgentSettings(data)` — salva configuracoes do agente em `tenants.agent_config`
+- [x] `getSettingsIntegrations()` — le integracoes reais do tenant
+- [x] `setIntegrationEnabled(type, enabled)` — persiste toggle em `integrations`
+- [x] `uploadTenantLogo(formData)` — upload seguro da logo do escritorio
+- [x] Hardening de storage — cria/garante bucket `tenant-assets` quando necessario
+- [x] Hardening de office code — tenta gerar `office_code` quando ausente e devolve erro explicito quando a migration ainda nao existe no banco remoto
+
+**Server Actions — Users**
+- [x] Criar `actions/users.ts`
+- [x] `getUsersAndInvites()` — lista usuarios reais + convites reais do tenant
+- [x] `inviteUser({ name, email, role })` — gera link via Supabase Admin + registra convite + envia email por Resend
+- [x] `updateUserRole(userId, role)` — atualiza role com guard server-side
+- [x] `deactivateUser(userId)` — muda status para `inactive`
+- [x] `deleteUser(userId)` — remove identidade do Auth e limpa convites remanescentes do mesmo email
+- [x] `deleteInvite(inviteId)` — remove convite pendente e limpa usuario pendente correspondente para permitir reenviar convite
 
 **Settings conectados**
-- [ ] Formulário de escritório carrega e salva dados reais
-- [ ] Configurações do agente carregam e salvam em `tenants.config` (JSONB)
-- [ ] Toggle de integrações salva em `integrations`
+- [x] `/settings/office` conectado ao banco real
+- [x] `/settings/agent` conectado a `tenants.agent_config`
+- [x] `/settings/integrations` conectado a `integrations`
+- [x] `OfficeForm` salva dados reais e exibe feedback claro
+- [x] `AgentForm` salva configuracoes reais do agente
+- [x] `IntegrationsClient` persiste toggles reais
+- [x] Google Calendar em settings passou a respeitar permissao lida do papel real do usuario no banco, nao apenas de claims stale da sessao
 
-**Gestão de usuários conectada**
-- [ ] Tabela carrega usuários reais do banco
-- [ ] Convidar usuário dispara email via Resend
-- [ ] Editar role salva imediatamente
-- [ ] Desativar usuário remove acesso (middleware checa `status`)
+**Gestao de usuarios conectada**
+- [x] `/settings/users` carrega usuarios reais do banco
+- [x] Lista separada de convites reais logo abaixo da tabela de usuarios
+- [x] Convite por email via Resend usando remetente do dominio `uselexia.app`
+- [x] Edicao de role salva imediatamente
+- [x] Desativacao remove acesso em nova navegacao via `proxy.ts`
+- [x] Exclusao de usuario implementada
+- [x] Exclusao de convite implementada
+- [x] Reenvio de convite para email previamente excluido corrigido com limpeza de identidade pendente no Supabase Auth
 
-**Permissões**
-- [ ] Criar `lib/permissions.ts` — mapa de features por role
-- [ ] Criar `lib/hooks/usePermissions.ts` — hook que retorna permissões do usuário atual
-- [ ] Guards nas Server Actions para validar role antes de executar
+**Convites e aceite**
+- [x] Convite usa `service.auth.admin.generateLink({ type: 'invite' })`
+- [x] Registro em `user_invites` com status `pending`, expiracao em 7 dias e `invited_by`
+- [x] Usuario convidado fica `pending` ate aceitar o convite
+- [x] Fluxo de aceite passa por `/accept-invite` / `reset-password`
+- [x] Ao concluir aceite/senha, usuario vira `active`
+- [x] Convite aceito sai da lista de convites e passa a aparecer na lista de usuarios
+- [x] Usuario convidado permanece relacionado ao tenant que o convidou
 
-**Verificação**
-- [ ] Salvar dados do escritório persiste após reload
-- [ ] Usuário convidado recebe email e consegue fazer login
-- [ ] Usuário com role `viewer` não vê botão "Novo Lead" (guarded no UI)
-- [ ] Build passa limpo
+**Permissoes**
+- [x] `lib/permissions.ts` expandido com `canManageSettings`, `canManageUsers`, `canManageTargetUser`
+- [x] Criar `lib/hooks/usePermissions.ts`
+- [x] Todas as Server Actions de settings/users validam sessao + tenant + papel real do usuario
+- [x] Regra travada: `admin` e `manager` gerenciam configuracoes e usuarios
+- [x] Regra travada: `manager` nao pode convidar, promover, desativar ou excluir usuario `admin`
+- [x] Roles `lawyer`, `secretary` e `viewer` bloqueados nas telas `/settings/office`, `/settings/agent` e `/settings/integrations`
+- [x] Em vez de redirect seco, paginas sem permissao mostram mensagem explicita de acesso negado
+
+**Header, perfil e logout**
+- [x] Menu do avatar do header passou a mostrar nome e perfil reais do usuario
+- [x] Avatar usa imagem real (`users.avatar_url`) ou iniciais do usuario
+- [x] Corrigido erro de runtime do dropdown (`MenuGroupRootContext is missing`)
+- [x] Navegacao do menu do perfil corrigida para `/profile` e `/settings/office`
+- [x] Logout corrigido no client com retorno para `/login`
+
+**Workspace real = escritorio**
+- [x] Workspace fake removido da UI
+- [x] Sidebar passa a refletir o tenant/escritorio real do usuario autenticado
+- [x] Nome do workspace vem de `tenants.display_name`
+- [x] Logo do workspace vem de `tenants.logo_url`
+- [x] Botao `Gerenciar escritorio` no seletor lateral corrigido
+- [x] Codigo do escritorio exibido e copiavel no seletor lateral e em `/settings/office`
+
+**Signup / onboarding evoluido**
+- [x] Signup com 2 modos:
+  - [x] `create_office`
+  - [x] `join_office`
+- [x] Criar escritorio:
+  - [x] cria tenant
+  - [x] tenta gerar `office_code`
+  - [x] cria usuario inicial com role `admin`
+  - [x] redireciona para `/onboarding`
+- [x] Entrar com codigo:
+  - [x] busca `tenants.office_code`
+  - [x] cria usuario no tenant localizado
+  - [x] role inicial minima segura: `viewer`
+  - [x] redireciona para `/dashboard`
+- [x] `emailRedirectTo` configurado no `signUp()` para links de confirmacao/auth
+- [x] Erros de signup mapeados com mensagens mais claras
+
+**Workspace/Profile/Assets — extensao incremental entregue junto ao M15**
+- [x] Migration `supabase/migrations/029_workspace_profile_assets.sql`
+- [x] `tenants.office_code`
+- [x] indice unico para `office_code`
+- [x] buckets `tenant-assets` e `user-avatars`
+- [x] `/settings/office` exibe o codigo do escritorio
+- [x] Upload da logo do escritorio salvo em Storage + URL em `tenants.logo_url`
+- [x] Criar `actions/profile.ts`
+- [x] Criar `/profile`
+- [x] `ProfileForm` com:
+  - [x] nome editavel
+  - [x] email visivel
+  - [x] role visivel
+  - [x] escritorio atual visivel
+  - [x] upload de avatar
+- [x] Avatar salvo em Storage + URL em `users.avatar_url`
+- [x] Header e sidebar atualizam com dados reais apos mudancas de perfil/escritorio
+
+**Dark mode / UX hardening feita durante o M15**
+- [x] Correcoes de contraste em dropdowns/selects/popovers das telas afetadas
+- [x] Formulario de criar evento no calendario corrigido no dark mode
+- [x] Formulario de criar lead corrigido no dark mode
+
+**Verificacao executada**
+- [x] Salvar dados do escritorio persiste apos reload
+- [x] Salvar configuracoes do agente persiste apos reload
+- [x] Toggle de integracoes persiste em `integrations`
+- [x] Convite cria `user_invites`
+- [x] Email de convite via Resend foi integrado ao fluxo
+- [x] `admin` e `manager` acessam gestao; demais roles sao bloqueados
+- [x] `manager` nao consegue gerenciar `admin`
+- [x] Usuario `inactive` perde acesso em nova navegacao via `proxy.ts`
+- [x] `npx tsc --noEmit`
+- [x] `npx eslint` direcionado aos arquivos alterados
+
+**Limitacoes / observacoes registradas**
+- [x] O schema de `office_code` e os buckets de Storage dependem da migration `029_workspace_profile_assets.sql`
+- [ ] Se a migration `029_workspace_profile_assets.sql` nao estiver aplicada no banco remoto, o escritorio nao recebe codigo real e a UI passa a mostrar erro explicito orientando aplicar a migration
+- [ ] Emails de confirmacao de signup dependem da configuracao de Auth/SMTP do Supabase, nao do Resend usado para convites
+- [ ] `next build` no workspace principal ainda pode sofrer com lock local de `.next` ou indisponibilidade de Google Fonts, sem relacao direta com a feature
 
 **Commit final:**
 ```
@@ -943,44 +1073,128 @@ feat(backend): settings and users — tenant config, user management, role-based
 
 ---
 
-### M17 · Integração n8n
+### M16 · Integração n8n
 
 **Branch:** `backend/n8n`
-**Objetivo:** n8n e a plataforma se comunicando de forma bidirecional — agente cria leads, move estágios, ingere movimentações no Radar, cria itens na timeline de Casos e dispara notificações.
+**Objetivo:** Travar a base de integração jurídica antes dos workflows amplos do n8n — discovery de processos por OAB, sync incremental de updates processuais, ingestão segura via endpoints inbound da Lexia e camada operacional manual para transformar processo importado em caso quando fizer sentido.
+
+> **Status atual do M16:** fase 1 concluída.
+> A Lexia já validou tecnicamente a ingestão jurídica via OAB/update, com idempotência e isolamento por tenant, antes de expandir para automações maiores de agente, leads e notificações.
 
 #### Entregas
 
-**Endpoints de webhook (Next.js → n8n)**
-- [ ] Criar `app/api/webhooks/lead-created/route.ts` — n8n recebe quando lead é criado manualmente no painel
-- [ ] Criar `app/api/webhooks/lead-converted/route.ts` — n8n recebe quando lead vira caso
-- [ ] Criar `app/api/webhooks/caso-updated/route.ts` — n8n recebe quando caso é atualizado
-- [ ] Todos os endpoints validam `X-Webhook-Secret`
+**Hardening de schema e RLS**
+- [x] Criar `supabase/migrations/030_n8n_process_sync_hardening.sql`
+  - [x] Hardening de `processos` para sync jurídico por tenant
+  - [x] Chaves de deduplicação por `tenant_id + external_source + external_id`
+  - [x] Chaves de deduplicação por `tenant_id + cnj_number`
+  - [x] Campo `source_update_id` em `radar_items` para impedir radar duplicado por update
+  - [x] Campos auxiliares de sync, incluindo `sync_error`
+- [x] Criar `supabase/migrations/031_n8n_rls_hardening.sql`
+  - [x] Garantir visibilidade de `processos`, `process_parties` e `process_updates` por tenant mesmo sem `case_process_links`
+  - [x] Preservar isolamento estrito entre tenants
 
-**Endpoints de ingestão (n8n → plataforma)**
-- [ ] Confirmar que `app/api/webhooks/radar/route.ts` (M13) funciona end-to-end com n8n real
-- [ ] Criar `app/api/webhooks/agent-log/route.ts` — n8n registra ação do agente (triagem, qualificação)
-- [ ] Criar `app/api/webhooks/stage-move/route.ts` — n8n move lead de estágio automaticamente
-- [ ] Criar `app/api/webhooks/caso-timeline/route.ts` — n8n adiciona evento à timeline do caso
+**Camada outbound da Lexia → n8n**
+- [x] Criar `lib/integrations/n8n.ts`
+- [x] `sendOabDiscoveryRequest(...)`
+- [x] `sendProcessSyncRequest(...)`
+- [x] `sendBatchProcessSyncRequest(...)`
+- [x] Validação de secret com comparação segura (`timingSafeEqual`)
+- [x] Helpers de normalização e deduplicação determinística para updates
 
-**Notificações em tempo real**
-- [ ] Quando n8n cria notificação no banco, `useRealtimeNotifications` a exibe no header
-- [ ] Badge de sino incrementa automaticamente
-- [ ] Clicar na notificação navega para o caso ou radar correspondente
+**Server Actions da fase 1**
+- [x] Criar `actions/processos.ts`
+- [x] `requestOabDiscovery(lawyerOabId)`
+- [x] `requestProcessSync(processoId)`
+- [x] `requestBatchProcessSync()`
+- [x] Todas validam sessão, tenant derivado server-side e acesso apenas a registros do tenant autenticado
 
-**Teste end-to-end**
-- [ ] Simular mensagem de WhatsApp → n8n processa → lead aparece no Kanban → triagem IA gera ficha → notificação no sino
-- [ ] Simular movimentação processual → n8n detecta → item aparece no Radar → resumo IA gerado → notificação para responsável
-- [ ] Simular lead convertido → caso criado → dossiê IA gerado
+**Endpoints inbound do n8n → Lexia**
+- [x] Criar `POST /api/webhooks/n8n/process-discovery`
+- [x] Criar `POST /api/webhooks/n8n/process-update`
+- [x] Criar `POST /api/webhooks/n8n/agent-log` (stub preparado)
+- [x] Todos validam `X-Webhook-Secret` com `N8N_WEBHOOK_SECRET`
+- [x] Todos retornam `200` com payload de resultado, inclusive em erro funcional controlado
+- [x] Ingestão feita pela Lexia com service role e validações internas de tenant
+
+**Ingestão jurídica validada**
+- [x] Discovery por OAB antes da criação de caso está suportada
+- [x] `process-discovery` faz upsert seguro e idempotente de:
+  - [x] `processos`
+  - [x] `process_parties`
+- [x] `process-update` faz ingestão segura e idempotente de:
+  - [x] `process_updates`
+  - [x] `radar_items`
+- [x] `process_parties` não apaga mais dados quando o payload recebido é parcial
+- [x] `processos` descobertos sem `case_process_links` continuam visíveis ao tenant autenticado
+- [x] Radar continua funcionando mesmo sem caso vinculado
+- [x] Deduplicação determinística validada para:
+  - [x] `processos`
+  - [x] `process_updates`
+  - [x] `radar_items`
+
+**Validação manual da fase 1**
+- [x] Payload fake/manual validado para `process-discovery`
+- [x] Payload fake/manual validado para `process-update`
+- [x] Reprocessar o mesmo payload não gera sujeira
+- [x] Idempotência validada manualmente nos dois fluxos
+
+**Camada operacional manual pós-fase 1**
+- [x] Nova página `/processos` para processos importados e ainda não convertidos em caso
+- [x] Criar `actions/processos-importados.ts`
+  - [x] `getImportedProcesses()`
+  - [x] `createCasoFromImportedProcess(processoId)`
+- [x] Melhoria operacional: processo importado pode virar caso manualmente, sem auto-create em massa
+- [x] Estado visual claro para:
+  - [x] processo pendente
+  - [x] processo já vinculado
+  - [x] ação disponível / indisponível
+
+**Hardening da criação manual de caso**
+- [x] Criar `supabase/migrations/032_manual_case_from_imported_process.sql`
+  - [x] `casos.origin_processo_id`
+  - [x] RPC transacional `create_case_from_imported_process(...)`
+  - [x] `FOR UPDATE` no processo durante a criação
+  - [x] índice único parcial em `casos(origin_processo_id)` quando não nulo e não deletado
+- [x] Criar `supabase/migrations/033_imported_process_case_defaults_hardening.sql`
+  - [x] `casos.client_id` deixa de ser obrigatório nesse fluxo
+  - [x] enum `caso_area` passa a suportar `A definir`
+- [x] Remover `client_id` fake/placeholder da criação manual
+- [x] Casos criados por esse fluxo agora podem nascer com `client_id = null`
+- [x] Remover área falsa `Cível`
+- [x] Casos criados por esse fluxo agora usam `area = 'A definir'`
+- [x] Caso criado deixa explícito em `observacoes` que cliente e área ainda dependem de classificação operacional
+- [x] Anti-duplicação validada com:
+  - [x] validação de negócio
+  - [x] RPC transacional
+  - [x] `FOR UPDATE`
+  - [x] índice único parcial
+
+**Radar / UX operacional relacionados ao eixo jurídico**
+- [x] Cards do Radar passaram a exibir linha de contexto do processo monitorado
+- [x] Prioridade da linha de contexto:
+  - [x] CNJ
+  - [x] cliente confiável
+  - [x] título do caso
+  - [x] `external_id` só como fallback sem CNJ
+- [x] Mesmo contexto reforçado no detalhe lateral do Radar
+
+**O que permanece para a etapa 2 do M16**
+- [ ] Workflows amplos de agente, leads e handoff via n8n
+- [ ] Webhooks outbound de `lead-created`, `lead-converted` e `caso-updated`
+- [ ] `stage-move` inbound para mover lead automaticamente
+- [ ] `caso-timeline` inbound genérico para automações futuras
+- [ ] Notificações em tempo real disparadas por workflows n8n além do eixo jurídico
+- [ ] Fluxo completo WhatsApp → Kanban → triagem IA → notificação
 
 **Verificação**
-- [ ] Fluxo completo WhatsApp → Kanban → triagem IA funciona sem intervenção manual
-- [ ] Fluxo completo movimentação → Radar → resumo IA funciona
-- [ ] Todos os webhooks respondem 200 em produção
-- [ ] Build passa limpo
+- [x] `npx tsc --noEmit`
+- [x] Lint direcionado aos arquivos alterados da feature
+- [ ] `next build` no workspace principal permanece sujeito a lock local em `.next`; classificado como limitação ambiental, não como falha atribuída ao M16 sem evidência adicional
 
 **Commit final:**
 ```
-feat(integration): n8n ↔ platform — webhooks, lead sync, radar ingest, realtime notifications
+feat(integration): M16 fase 1 — n8n + Escavador com discovery por OAB, process-update e criacao manual de caso a partir de processo importado
 ```
 
 ---
@@ -989,7 +1203,7 @@ feat(integration): n8n ↔ platform — webhooks, lead sync, radar ingest, realt
 
 ---
 
-### M18 · Deploy & Observabilidade
+### M17 · Deploy & Observabilidade
 
 **Branch:** `deploy/production`
 **Objetivo:** Plataforma em produção, monitorada, com CI/CD configurado e variáveis de ambiente seguras.
@@ -997,7 +1211,7 @@ feat(integration): n8n ↔ platform — webhooks, lead sync, radar ingest, realt
 #### Entregas
 
 **Variáveis de ambiente (produção)**
-- [ ] Configurar no Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `WEBHOOK_SECRET`, `RESEND_API_KEY`, `ANTHROPIC_API_KEY`
+- [ ] Configurar no Vercel: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `N8N_WEBHOOK_SECRET`, `RESEND_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI`, `INTEGRATIONS_ENCRYPTION_KEY`
 - [ ] Remover todos os dados mock do código (substituídos por dados reais)
 - [ ] Confirmar que `.env.example` está atualizado e `.env.local` não está no git
 

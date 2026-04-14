@@ -2,7 +2,10 @@
 
 export type CasoStatus = 'Ativo' | 'Suspenso' | 'Encerrado' | 'Arquivado'
 
+import type { SyncSource, SyncStatus } from '@/types/database'
+
 export type CasoArea =
+  | 'A definir'
   | 'Trabalhista'
   | 'Cível'
   | 'Família'
@@ -27,6 +30,10 @@ export interface ProcessoVinculado {
   ultimaMovimentacao: string | null  // data_ultima_mov
   resumoUltimaMovimentacao: string   // assunto ou classe
   isPrimary: boolean                 // case_process_links.is_primary
+  externalSource: SyncSource
+  syncStatus: SyncStatus
+  lastSyncedAt: string | null
+  syncError: string | null
 }
 
 // ── Pendência ─────────────────────────────────────────────────────────────────
@@ -104,8 +111,8 @@ export interface Caso {
   descricao: string | null
   observacoes: string | null
 
-  // Cliente (sempre real — client_id nunca null)
-  clienteId: string
+  // Cliente (opcional em casos criados a partir de processo importado)
+  clienteId: string | null
   clienteNome: string             // clients.name
 
   // Responsável principal
@@ -148,7 +155,7 @@ export interface CasoSummary {
   numeroInterno: string | null
   area: CasoArea
   status: CasoStatus
-  clienteId: string
+  clienteId: string | null
   clienteNome: string
   responsavelId: string | null
   responsavelNome: string | null
@@ -201,6 +208,7 @@ export const CASO_STATUS_COLORS: Record<CasoStatus, string> = {
 }
 
 export const CASO_AREA_COLORS: Record<CasoArea, string> = {
+  'A definir':      '#64748B',
   Trabalhista:    '#3B82F6',
   Cível:          '#8B5CF6',
   Família:        '#EC4899',
@@ -231,8 +239,7 @@ export const TIMELINE_EVENT_LABELS: Record<TimelineEventTipo, string> = {
 }
 
 export const CASO_AREAS: CasoArea[] = [
-  'Trabalhista', 'Cível', 'Família', 'Criminal', 'Empresarial',
+  'A definir', 'Trabalhista', 'Cível', 'Família', 'Criminal', 'Empresarial',
   'Tributário', 'Previdenciário', 'Consumidor', 'Imobiliário', 'Ambiental',
 ]
-
 export const CASO_STATUSES: CasoStatus[] = ['Ativo', 'Suspenso', 'Encerrado', 'Arquivado']

@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useMemo, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Search, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { ArrowRight, Plus, Search, X } from 'lucide-react'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CasosTable } from '@/components/casos/CasosTable'
 import { CasoFormDialog } from '@/components/casos/CasoFormDialog'
@@ -59,7 +60,7 @@ export function CasosClient({ initialCasos, users, leads }: CasosClientProps) {
       numeroInterno: null,
       area: data.area,
       status: data.status,
-      clienteId: '',
+      clienteId: null,
       clienteNome: data.clienteNome,
       responsavelId: data.responsavelId || null,
       responsavelNome: responsavel?.name ?? null,
@@ -218,10 +219,16 @@ export function CasosClient({ initialCasos, users, leads }: CasosClientProps) {
           )}
         </div>
 
-        <Button onClick={() => setCreateOpen(true)} size="sm" className="h-9 gap-2 shrink-0">
-          <Plus className="h-4 w-4" />
-          Novo caso
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link href="/processos" className={buttonVariants({ variant: 'outline', size: 'sm', className: 'h-9 gap-2' })}>
+            Processos importados
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Button onClick={() => setCreateOpen(true)} size="sm" className="h-9 gap-2">
+            <Plus className="h-4 w-4" />
+            Novo caso
+          </Button>
+        </div>
       </div>
 
       {/* Resultado */}

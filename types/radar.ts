@@ -23,6 +23,36 @@ export interface RadarItem {
   impactoNoCaso: string
   dataResolucao?: string // ISO 8601, set when status = 'resolvido'
   referenciaExterna?: string // ID ou URL da fonte externa (ex: Escavador, Datajud)
+  processoNumero?: string
+  processoExternalId?: string
+  contextoLinha?: string
+}
+
+function normalizeForCompare(value: string): string {
+  return value.trim().toLocaleLowerCase('pt-BR')
+}
+
+export function buildRadarContextLine(item: Pick<RadarItem, 'titulo' | 'casoTitulo' | 'cliente' | 'processoNumero' | 'processoExternalId'>): string {
+  const parts: string[] = []
+
+  if (item.processoNumero?.trim()) {
+    parts.push(item.processoNumero.trim())
+  } else if (item.processoExternalId?.trim()) {
+    parts.push(`Ref. ${item.processoExternalId.trim()}`)
+  }
+
+  if (item.cliente.trim()) {
+    parts.push(item.cliente.trim())
+  }
+
+  if (
+    item.casoTitulo.trim() &&
+    normalizeForCompare(item.casoTitulo) !== normalizeForCompare(item.titulo)
+  ) {
+    parts.push(item.casoTitulo.trim())
+  }
+
+  return parts.join(' • ')
 }
 
 export const RADAR_TIPO_COLORS: Record<RadarTipo, string> = {

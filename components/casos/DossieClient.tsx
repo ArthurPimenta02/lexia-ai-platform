@@ -13,7 +13,6 @@ import {
   User,
   Building2,
   Scale,
-  Hash,
   Clock,
   AlertCircle,
   FileText,
@@ -21,8 +20,9 @@ import {
   ExternalLink,
   ChevronRight,
   Send,
+  RefreshCw,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CasoStatusBadge, CasoAreaBadge, UrgenciaBadge } from '@/components/casos/CasoStatusBadge'
@@ -30,8 +30,25 @@ import { DossieInteligente } from '@/components/casos/DossieInteligente'
 import { CasoFormDialog } from '@/components/casos/CasoFormDialog'
 import { cn } from '@/lib/utils'
 import { updateCaso, updatePendencia, createPendencia, addTimelineEvent } from '@/actions/casos'
+import { requestProcessSync } from '@/actions/processos'
 import type { Caso, TimelineEvent, TimelineEventTipo, Pendencia, ProcessoVinculado, Documento, CasoFormData, PendenciaInput, UrgenciaNivel } from '@/types/caso'
 import { TIMELINE_EVENT_LABELS } from '@/types/caso'
+import type { CalendarEvent } from '@/types/calendar'
+import { EVENT_STATUS_CONFIG, EVENT_TYPE_CONFIG } from '@/types/calendar'
+
+const PROCESS_SYNC_LABELS = {
+  pending: 'Pendente',
+  synced: 'Sincronizado',
+  error: 'Erro',
+  stale: 'Desatualizado',
+} as const
+
+const PROCESS_SYNC_STYLES = {
+  pending: 'border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300',
+  synced: 'border-emerald-200 bg-emerald-100 text-emerald-800 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300',
+  error: 'border-red-200 bg-red-100 text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300',
+  stale: 'border-zinc-200 bg-zinc-100 text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-300',
+} as const
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
@@ -57,6 +74,17 @@ function fmtRelative(iso: string) {
 }
 
 // ─── Timeline icon/color ──────────────────────────────────────────────────────
+
+function fmtSyncDate(iso: string | null) {
+  if (!iso) return 'Nunca sincronizado'
+  return new Date(iso).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
 
 const TIMELINE_ICON: Record<TimelineEventTipo, { icon: React.ElementType; colorClass: string; bgClass: string }> = {
   criacao:                { icon: Plus,         colorClass: 'text-emerald-600 dark:text-emerald-400', bgClass: 'bg-emerald-100 dark:bg-emerald-900/40' },
@@ -88,6 +116,54 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
       <span className="text-xs text-muted-foreground w-28 shrink-0 pt-0.5">{label}</span>
       <span className="text-sm text-foreground flex-1">{children}</span>
     </div>
+  )
+}
+
+function SecaoAppointments({ appointments }: { appointments: CalendarEvent[] }) {
+  return (
+    <SectionCard title="Compromissos vinculados">
+      {appointments.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-2">
+          Nenhum compromisso vinculado a este caso
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {appointments.map((appointment) => (
+            <div
+              key={appointment.id}
+              className="rounded-lg border border-border bg-muted/10 px-3 py-3 space-y-2"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {appointment.title}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formatAppointmentDateTime(appointment)}
+                  </p>
+                </div>
+                <Link
+                  href="/calendar"
+                  className={buttonVariants({ variant: 'ghost', size: 'sm', className: 'h-7 px-2 text-xs shrink-0' })}
+                >
+                  Abrir
+                </Link>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <AppointmentPill
+                  label={EVENT_TYPE_CONFIG[appointment.type].label}
+                  className="border-border bg-background text-foreground"
+                />
+                <AppointmentPill
+                  label={EVENT_STATUS_CONFIG[appointment.status].label}
+                  className={`${EVENT_STATUS_CONFIG[appointment.status].bgColor} ${EVENT_STATUS_CONFIG[appointment.status].textColor}`}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </SectionCard>
   )
 }
 
@@ -348,7 +424,15 @@ function PendenciaItem({
 
 // ─── Seção: Processos Vinculados ──────────────────────────────────────────────
 
-function SecaoProcessos({ processos }: { processos: ProcessoVinculado[] }) {
+function SecaoProcessos({
+  processos,
+  onSync,
+  syncingIds,
+}: {
+  processos: ProcessoVinculado[]
+  onSync: (processoId: string) => void
+  syncingIds: Set<string>
+}) {
   return (
     <SectionCard title={`Processos Vinculados (${processos.length})`}>
       {processos.length === 0 ? (
@@ -363,11 +447,32 @@ function SecaoProcessos({ processos }: { processos: ProcessoVinculado[] }) {
                   <p className="text-xs text-muted-foreground mt-0.5">{proc.tribunal}</p>
                   {proc.vara && <p className="text-xs text-muted-foreground">{proc.vara}</p>}
                 </div>
-                {proc.isPrimary && (
-                  <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 px-1.5 py-0.5 rounded font-medium shrink-0">
-                    Principal
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {proc.isPrimary && (
+                    <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 px-1.5 py-0.5 rounded font-medium shrink-0">
+                      Principal
+                    </span>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 gap-1.5 px-2 text-xs"
+                    onClick={() => onSync(proc.id)}
+                    disabled={syncingIds.has(proc.id)}
+                  >
+                    <RefreshCw className={cn('h-3.5 w-3.5', syncingIds.has(proc.id) && 'animate-spin')} />
+                    {syncingIds.has(proc.id) ? 'Solicitando...' : 'Atualizar processo agora'}
+                  </Button>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium', PROCESS_SYNC_STYLES[proc.syncStatus])}>
+                  {PROCESS_SYNC_LABELS[proc.syncStatus]}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  Ultima sync: {fmtSyncDate(proc.lastSyncedAt)}
+                </span>
               </div>
               {proc.resumoUltimaMovimentacao && (
                 <div className="border-t border-border/50 pt-1.5">
@@ -377,6 +482,11 @@ function SecaoProcessos({ processos }: { processos: ProcessoVinculado[] }) {
                     {proc.resumoUltimaMovimentacao}
                   </p>
                 </div>
+              )}
+              {proc.syncError && (
+                <p className="rounded-md border border-destructive/30 bg-destructive/10 px-2 py-1 text-[11px] text-destructive">
+                  Ultimo erro: {proc.syncError}
+                </p>
               )}
             </div>
           ))}
@@ -425,12 +535,11 @@ function SecaoDocumentos({ documentos }: { documentos: Documento[] }) {
 
 interface SecaoTimelineProps {
   events: TimelineEvent[]
-  casoId: string
   onAddNote: (titulo: string, descricao: string) => void
   addingNote: boolean
 }
 
-function SecaoTimeline({ events, casoId: _casoId, onAddNote, addingNote }: SecaoTimelineProps) {
+function SecaoTimeline({ events, onAddNote, addingNote }: SecaoTimelineProps) {
   const sorted = [...events].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
   const [noteOpen, setNoteOpen] = useState(false)
   const [noteTitulo, setNoteTitulo] = useState('')
@@ -623,13 +732,15 @@ interface DossieClientProps {
   caso: Caso
   users: { id: string; name: string }[]
   leads: { id: string; name: string }[]
+  appointments: CalendarEvent[]
 }
 
-export function DossieClient({ caso: initialCaso, users, leads }: DossieClientProps) {
+export function DossieClient({ caso: initialCaso, users, leads, appointments }: DossieClientProps) {
   const router = useRouter()
   const [caso, setCaso] = useState<Caso>(initialCaso)
   const [editOpen, setEditOpen] = useState(false)
   const [resolvingIds, setResolvingIds] = useState<Set<string>>(new Set())
+  const [syncingProcessIds, setSyncingProcessIds] = useState<Set<string>>(new Set())
   const [, startTransition] = useTransition()
   const [addingNote, setAddingNote] = useState(false)
 
@@ -767,6 +878,25 @@ export function DossieClient({ caso: initialCaso, users, leads }: DossieClientPr
     })
   }
 
+  function handleSyncProcess(processoId: string) {
+    setSyncingProcessIds((prev) => new Set(prev).add(processoId))
+
+    startTransition(async () => {
+      const result = await requestProcessSync(processoId)
+      if ('error' in result) {
+        alert(result.error)
+      } else {
+        router.refresh()
+      }
+
+      setSyncingProcessIds((prev) => {
+        const next = new Set(prev)
+        next.delete(processoId)
+        return next
+      })
+    })
+  }
+
   return (
     <div className="space-y-6">
       {/* Voltar */}
@@ -787,11 +917,10 @@ export function DossieClient({ caso: initialCaso, users, leads }: DossieClientPr
         <div className="lg:col-span-2 space-y-6">
           <SecaoTimeline
             events={caso.timeline}
-            casoId={caso.id}
             onAddNote={handleAddNote}
             addingNote={addingNote}
           />
-          <SecaoProcessos processos={caso.processos} />
+          <SecaoProcessos processos={caso.processos} onSync={handleSyncProcess} syncingIds={syncingProcessIds} />
           <SecaoDocumentos documentos={caso.documentos} />
         </div>
 
@@ -809,6 +938,7 @@ export function DossieClient({ caso: initialCaso, users, leads }: DossieClientPr
           />
 
           <SecaoVisaoGeral caso={caso} />
+          <SecaoAppointments appointments={appointments} />
           <SecaoPendencias
             caso={caso}
             pendencias={caso.pendencias}
@@ -847,5 +977,33 @@ export function DossieClient({ caso: initialCaso, users, leads }: DossieClientPr
         onSave={handleEdit}
       />
     </div>
+  )
+}
+
+function formatAppointmentDateTime(appointment: CalendarEvent) {
+  const date = new Date(appointment.start)
+  const dateLabel = date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+
+  if (appointment.allDay) {
+    return `${dateLabel} · Dia inteiro`
+  }
+
+  const timeLabel = date.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  return `${dateLabel} às ${timeLabel}`
+}
+
+function AppointmentPill({ label, className }: { label: string; className: string }) {
+  return (
+    <span className={cn('inline-flex items-center rounded-full border px-2 py-1 text-[11px] font-medium', className)}>
+      {label}
+    </span>
   )
 }
