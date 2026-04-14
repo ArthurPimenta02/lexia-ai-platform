@@ -5,6 +5,10 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/server'
 
 const OFFICE_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+const BR_STATES = new Set([
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
+  'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+])
 
 function generateOfficeCodeCandidate(length = 8) {
   let code = ''
@@ -122,6 +126,9 @@ export async function signUp(formData: FormData) {
   const officeName = formData.get('officeName') as string
   const officeCode = formData.get('officeCode') as string
   const signupMode = formData.get('signupMode') as 'create_office' | 'join_office' | null
+  const isLawyer = formData.get('isLawyer') === 'true'
+  const oabNumber = ((formData.get('oabNumber') as string | null) ?? '').trim().replace(/\D/g, '')
+  const oabState = ((formData.get('oabState') as string | null) ?? '').trim().toUpperCase()
 
   if (!name || !email || !password || !signupMode) {
     return { error: 'Preencha todos os campos obrigatorios.' }
@@ -133,6 +140,16 @@ export async function signUp(formData: FormData) {
 
   if (signupMode === 'join_office' && !officeCode) {
     return { error: 'Informe o codigo do escritorio.' }
+  }
+
+  if (signupMode === 'create_office' && isLawyer) {
+    if (!/^\d{3,7}$/.test(oabNumber)) {
+      return { error: 'Informe um numero de OAB valido.' }
+    }
+
+    if (!BR_STATES.has(oabState)) {
+      return { error: 'Informe uma UF valida para a OAB.' }
+    }
   }
 
   const service = createServiceClient()
@@ -185,7 +202,7 @@ export async function signUp(formData: FormData) {
 
   // 2. Cria o usuÃ¡rio no Supabase Auth com metadados para o trigger
   const supabase = await createClient()
-  const { error: authError } = await supabase.auth.signUp({
+  const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -204,6 +221,22 @@ export async function signUp(formData: FormData) {
       await service.from('tenants').delete().eq('id', tenantId)
     }
     return { error: mapAuthError(authError.message) }
+  }
+
+  if (signupMode === 'create_office' && isLawyer && tenantId && authData.user?.id) {
+    const { error: oabError } = await service
+      .from('lawyer_oabs')
+      .insert({
+        tenant_id: tenantId,
+        user_id: authData.user.id,
+        oab_number: oabNumber,
+        oab_state: oabState,
+        is_primary: true,
+      })
+
+    if (oabError) {
+      console.error('signUp: falha ao salvar OAB inicial', oabError)
+    }
   }
 
   redirect(redirectPath)

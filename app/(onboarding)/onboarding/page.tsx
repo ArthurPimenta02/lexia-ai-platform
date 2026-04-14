@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2, Building2, Scale, Plus, Trash2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Loader2, Building2, Scale } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,33 +13,26 @@ const BR_STATES = [
   'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO',
 ]
 
-interface OabEntry { number: string; state: string }
-
 interface FormErrors {
   displayName?: string
-  oabs?: string
+  oab?: string
   server?: string
 }
 
 export default function OnboardingPage() {
+  const router = useRouter()
   const [step, setStep] = useState<1 | 2>(1)
   const [displayName, setDisplayName] = useState('')
-  const [oabs, setOabs] = useState<OabEntry[]>([{ number: '', state: 'SP' }])
+  const [isLawyer, setIsLawyer] = useState(false)
+  const [oabNumber, setOabNumber] = useState('')
+  const [oabState, setOabState] = useState('SP')
+  const [searchNow, setSearchNow] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [loading, setLoading] = useState(false)
-
-  function addOab() {
-    setOabs((prev) => [...prev, { number: '', state: 'SP' }])
-  }
-
-  function removeOab(index: number) {
-    setOabs((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  function updateOab(index: number, field: keyof OabEntry, value: string) {
-    setOabs((prev) => prev.map((o, i) => (i === index ? { ...o, [field]: value } : o)))
-    if (errors.oabs) setErrors((prev) => ({ ...prev, oabs: undefined }))
-  }
+  const [completedState, setCompletedState] = useState<{
+    title: string
+    description: string
+  } | null>(null)
 
   function validateStep1() {
     if (!displayName.trim() || displayName.trim().length < 2) {
@@ -50,16 +44,19 @@ export default function OnboardingPage() {
   }
 
   function validateStep2() {
-    const filled = oabs.filter((o) => o.number.trim())
-    if (filled.length === 0) {
-      setErrors({ oabs: 'Informe pelo menos 1 número de OAB.' })
+    if (!isLawyer) {
+      setErrors({})
+      return true
+    }
+
+    if (!oabNumber.trim()) {
+      setErrors({ oab: 'Informe o numero da sua OAB ou desmarque a opcao de cadastro agora.' })
       return false
     }
-    for (const o of filled) {
-      if (!/^\d{3,7}$/.test(o.number.trim())) {
-        setErrors({ oabs: 'Número de OAB inválido (apenas dígitos, 3 a 7 caracteres).' })
-        return false
-      }
+
+    if (!/^\d{3,7}$/.test(oabNumber.trim())) {
+      setErrors({ oab: 'Numero de OAB invalido (apenas digitos, 3 a 7 caracteres).' })
+      return false
     }
     setErrors({})
     return true
@@ -77,22 +74,69 @@ export default function OnboardingPage() {
     setLoading(true)
     const formData = new FormData()
     formData.set('displayName', displayName.trim())
-
-    const validOabs = oabs
-      .filter((o) => o.number.trim())
-      .map((o) => ({ oab_number: o.number.trim(), oab_state: o.state }))
-    formData.set('oabs', JSON.stringify(validOabs))
+    if (isLawyer && oabNumber.trim()) {
+      formData.set('oabNumber', oabNumber.trim())
+      formData.set('oabState', oabState)
+      formData.set('searchNow', String(searchNow))
+    }
 
     const result = await completeOnboarding(formData)
-    // completeOnboarding redireciona em caso de sucesso — só chega aqui se houve erro
     if (result?.error) {
       setErrors({ server: result.error })
+      setLoading(false)
+      return
+    }
+
+    if (result?.success) {
+      if (result.oabSaved && result.discoveryRequested) {
+        setCompletedState({
+          title: 'Onboarding concluido',
+          description: 'Sua OAB foi salva e a busca inicial dos seus processos foi iniciada.',
+        })
+      } else if (result.oabSaved) {
+        setCompletedState({
+          title: 'Onboarding concluido',
+          description: result.discoveryError
+            ? 'Sua OAB foi salva, mas a busca inicial nao pode ser iniciada agora. Voce podera buscar depois no seu perfil.'
+            : 'Sua OAB foi salva. Voce podera buscar seus processos depois no seu perfil.',
+        })
+      } else {
+        setCompletedState({
+          title: 'Onboarding concluido',
+          description: 'Seu escritorio foi configurado. Se quiser, voce podera cadastrar sua OAB depois no seu perfil.',
+        })
+      }
+
       setLoading(false)
     }
   }
 
   const totalSteps = 2
   const progress = (step / totalSteps) * 100
+
+  if (completedState) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand/10">
+            <Scale className="h-6 w-6 text-brand" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">{completedState.title}</h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {completedState.description}
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          className="w-full h-11 bg-brand hover:bg-brand-dark text-white text-base"
+          onClick={() => router.push('/dashboard')}
+        >
+          Entrar na plataforma
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -175,10 +219,10 @@ export default function OnboardingPage() {
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand/10">
               <Scale className="h-6 w-6 text-brand" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Números de OAB</h1>
+            <h1 className="text-2xl font-bold text-foreground">Cadastre sua OAB para importar seus processos</h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Informe os números de OAB do escritório. Usamos esses dados para monitorar
-              processos automaticamente via CNJ/Escavador.
+              Esse cadastro e opcional neste momento. Se voce for advogado, pode informar sua OAB
+              agora e iniciar a primeira busca dos seus processos ao concluir o onboarding.
             </p>
           </div>
 
@@ -190,61 +234,83 @@ export default function OnboardingPage() {
           )}
 
           <form onSubmit={handleSubmit} noValidate className="space-y-6">
-            <div className="space-y-3">
-              <Label>Números de OAB</Label>
-
-              {oabs.map((oab, index) => (
-                <div key={index} className="flex gap-2 items-start">
-                  <div className="flex-1">
-                    <Input
-                      type="text"
-                      placeholder="Ex: 123456"
-                      value={oab.number}
-                      aria-invalid={!!errors.oabs && index === 0}
-                      onChange={(e) => updateOab(index, 'number', e.target.value.replace(/\D/g, ''))}
-                      disabled={loading}
-                      maxLength={7}
-                    />
-                  </div>
-                  <select
-                    value={oab.state}
-                    onChange={(e) => updateOab(index, 'state', e.target.value)}
-                    disabled={loading}
-                    className="h-10 rounded-md border border-input bg-background text-foreground px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50"
-                  >
-                    {BR_STATES.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                  {oabs.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeOab(index)}
-                      disabled={loading}
-                      className="h-10 w-10 text-muted-foreground hover:text-error"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
-
-              {errors.oabs && <p className="text-xs text-error">{errors.oabs}</p>}
-
-              {oabs.length < 5 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={addOab}
+            <div className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={isLawyer}
+                  onChange={(e) => {
+                    setIsLawyer(e.target.checked)
+                    if (!e.target.checked) {
+                      setOabNumber('')
+                      setSearchNow(false)
+                      setErrors((prev) => ({ ...prev, oab: undefined }))
+                    }
+                  }}
                   disabled={loading}
-                  className="text-brand hover:text-brand-dark"
-                >
-                  <Plus className="mr-1 h-4 w-4" />
-                  Adicionar outro número
-                </Button>
+                  className="mt-1 h-4 w-4 rounded border-input"
+                />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-foreground">Sou advogado e quero cadastrar minha OAB agora</p>
+                  <p className="text-xs text-muted-foreground">
+                    A OAB fica vinculada ao seu usuario e podera ser editada depois no perfil.
+                  </p>
+                </div>
+              </label>
+
+              {isLawyer && (
+                <div className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-[1fr_110px]">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="onboarding-oab-number">Numero da OAB</Label>
+                      <Input
+                        id="onboarding-oab-number"
+                        type="text"
+                        placeholder="Ex: 123456"
+                        value={oabNumber}
+                        aria-invalid={!!errors.oab}
+                        onChange={(e) => {
+                          setOabNumber(e.target.value.replace(/\D/g, ''))
+                          if (errors.oab) setErrors((prev) => ({ ...prev, oab: undefined }))
+                        }}
+                        disabled={loading}
+                        maxLength={7}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="onboarding-oab-state">UF</Label>
+                      <select
+                        id="onboarding-oab-state"
+                        value={oabState}
+                        onChange={(e) => setOabState(e.target.value)}
+                        disabled={loading}
+                        className="h-10 rounded-md border border-input bg-background text-foreground px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50"
+                      >
+                        {BR_STATES.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {errors.oab && <p className="text-xs text-error">{errors.oab}</p>}
+
+                  <label className="flex items-start gap-3 rounded-lg border border-border bg-background px-3 py-3">
+                    <input
+                      type="checkbox"
+                      checked={searchNow}
+                      onChange={(e) => setSearchNow(e.target.checked)}
+                      disabled={loading || !oabNumber.trim()}
+                      className="mt-1 h-4 w-4 rounded border-input"
+                    />
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-foreground">Buscar meus processos agora</p>
+                      <p className="text-xs text-muted-foreground">
+                        Ao concluir o onboarding, a Lexia vai reutilizar o fluxo ja existente de discovery via n8n.
+                      </p>
+                    </div>
+                  </label>
+                </div>
               )}
             </div>
 
