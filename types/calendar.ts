@@ -31,6 +31,7 @@ export interface CalendarEvent {
   casoTitle?: string
   leadId?: string
   leadName?: string
+  responsibleId?: string
   responsible: string
   location?: string
   notes?: string
@@ -41,6 +42,41 @@ export interface CalendarEvent {
   googleMeetLink?: string       // Link de videochamada Meet gerado pelo Google
   recurrence?: string[]         // RRULE strings (ex: ["RRULE:FREQ=WEEKLY;BYDAY=MO"])
   attendees?: CalendarAttendee[]
+}
+
+export interface CalendarCaseOption {
+  id: string
+  title: string
+}
+
+export interface CalendarLeadOption {
+  id: string
+  name: string
+}
+
+export interface CalendarResponsibleOption {
+  id: string
+  name: string
+}
+
+export interface CalendarFormOptions {
+  casos: CalendarCaseOption[]
+  leads: CalendarLeadOption[]
+  responsaveis: CalendarResponsibleOption[]
+}
+
+export interface CalendarEventInput {
+  title: string
+  start: string
+  end: string
+  allDay: boolean
+  type: EventType
+  priority: EventPriority
+  casoId?: string
+  leadId?: string
+  responsibleId?: string
+  location?: string
+  notes?: string
 }
 
 export interface CalendarAttendee {

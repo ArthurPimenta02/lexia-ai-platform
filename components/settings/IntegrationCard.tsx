@@ -38,6 +38,14 @@ function StatusBadge({ status }: { status: IntegrationStatus }) {
       </span>
     )
   }
+  if (status === 'error') {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
+        <Clock className="h-3 w-3" />
+        Erro
+      </span>
+    )
+  }
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
       <Clock className="h-3 w-3" />
@@ -48,10 +56,11 @@ function StatusBadge({ status }: { status: IntegrationStatus }) {
 
 interface IntegrationCardProps {
   integration: Integration
-  onToggle: (id: string) => void
+  onToggle?: (id: string) => void
+  onPrimaryAction?: (integration: Integration) => void
 }
 
-export function IntegrationCard({ integration, onToggle }: IntegrationCardProps) {
+export function IntegrationCard({ integration, onToggle, onPrimaryAction }: IntegrationCardProps) {
   const Icon = ICON_MAP[integration.logoIcon] ?? MessageCircle
   const isComingSoon = integration.status === 'coming_soon'
 
@@ -90,10 +99,21 @@ export function IntegrationCard({ integration, onToggle }: IntegrationCardProps)
               </p>
             )}
 
+            {integration.connectionDetails && (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Agenda: {integration.connectionDetails}
+              </p>
+            )}
+            {integration.errorMessage && (
+              <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
+                {integration.errorMessage}
+              </p>
+            )}
+
             {/* Actions */}
             <div className="mt-3 flex items-center gap-3">
               {/* Toggle on/off */}
-              {!isComingSoon && (
+              {!isComingSoon && onToggle && integration.type !== 'google_calendar' && (
                 <button
                   type="button"
                   role="switch"
@@ -120,6 +140,7 @@ export function IntegrationCard({ integration, onToggle }: IntegrationCardProps)
                 size="sm"
                 disabled={isComingSoon}
                 className="h-7 text-xs"
+                onClick={() => onPrimaryAction?.(integration)}
               >
                 {integration.primaryAction}
               </Button>

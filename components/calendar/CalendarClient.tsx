@@ -1,22 +1,32 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { RefreshCw, Unplug, Wifi } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { syncAppointmentsWithGoogle } from '@/actions/appointments'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import type { CalendarEvent, EventType } from '@/types/calendar'
+import type { CalendarEvent, CalendarFormOptions, EventType } from '@/types/calendar'
+import type { GoogleCalendarIntegrationStatus } from '@/lib/google-calendar/server'
 import type { CalendarViewType } from './CalendarView'
 import { CalendarHeader } from './CalendarHeader'
 import { CalendarView } from './CalendarView'
-import { EventDetailModal } from './EventDetailModal'
-import { EventCreateModal } from './EventCreateModal'
-import { useGoogleCalendar } from '@/lib/hooks/useGoogleCalendar'
+import { EventDetailModalReal } from './EventDetailModalReal'
+import { EventCreateModalReal } from './EventCreateModalReal'
 
 interface CalendarClientProps {
   events: CalendarEvent[]
+  formOptions: CalendarFormOptions
+  googleIntegration: GoogleCalendarIntegrationStatus
 }
 
-export function CalendarClient({ events: initialEvents }: CalendarClientProps) {
+export function CalendarClient({
+  events: initialEvents,
+  formOptions,
+  googleIntegration,
+}: CalendarClientProps) {
+  const router = useRouter()
+  const [isSyncingGoogle, startSyncTransition] = useTransition()
   const [events, setEvents] = useState<CalendarEvent[]>(initialEvents)
   const [view, setView] = useState<CalendarViewType>('month')
   const [currentDate, setCurrentDate] = useState<Date>(new Date())
@@ -28,20 +38,18 @@ export function CalendarClient({ events: initialEvents }: CalendarClientProps) {
   const [createOpen, setCreateOpen] = useState(false)
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null)
 
-  // Google Calendar integration
-  const google = useGoogleCalendar({
-    onEventsLoaded: (googleEvents) => {
-      setEvents((prev) => {
-        // Merge: keep local events that don't have a matching googleEventId
-        const localOnly = prev.filter(
-          (e) => !googleEvents.some((g) => g.googleEventId === e.googleEventId)
-        )
-        return [...localOnly, ...googleEvents]
-      })
-    },
-  })
+  const google: {
+    isConnected: boolean
+    lastSyncedAt: string
+    syncStatus: 'idle' | 'syncing'
+    disconnect: () => void
+  } = {
+    isConnected: googleIntegration.connected,
+    lastSyncedAt: googleIntegration.lastSyncAt ?? '',
+    syncStatus: isSyncingGoogle ? 'syncing' : 'idle',
+    disconnect: () => router.push('/settings/integrations'),
+  }
 
-  // Navigation
   function navigate(direction: 'prev' | 'next') {
     setCurrentDate((prev) => {
       const d = new Date(prev)
@@ -65,7 +73,6 @@ export function CalendarClient({ events: initialEvents }: CalendarClientProps) {
     setView('day')
   }
 
-  // Event interactions
   function handleEventClick(event: CalendarEvent) {
     setSelectedEvent(event)
     setDetailOpen(true)
@@ -76,37 +83,12 @@ export function CalendarClient({ events: initialEvents }: CalendarClientProps) {
     setCreateOpen(true)
   }
 
-  function handleMarkCompleted(event: CalendarEvent) {
+  function handleEventSaved(savedEvent: CalendarEvent) {
     setEvents((prev) =>
-      prev.map((e) => (e.id === event.id ? { ...e, status: 'completed' } : e))
+      prev.some((event) => event.id === savedEvent.id)
+        ? prev.map((event) => (event.id === savedEvent.id ? savedEvent : event))
+        : [...prev, savedEvent]
     )
-  }
-
-  function handleCancelEvent(event: CalendarEvent) {
-    setEvents((prev) =>
-      prev.map((e) => (e.id === event.id ? { ...e, status: 'cancelled' } : e))
-    )
-    // If synced with Google, delete from there too
-    if (google.isConnected && event.googleEventId) {
-      google.deleteEvent(event.googleEventId).catch(console.error)
-    }
-  }
-
-  async function handleSaveEvent(saved: CalendarEvent) {
-    let finalEvent = saved
-    // Push to Google if connected
-    if (google.isConnected) {
-      try {
-        finalEvent = await google.pushEvent(saved)
-      } catch (err) {
-        console.error('Google sync failed, saving locally only:', err)
-      }
-    }
-    setEvents((prev) => {
-      const exists = prev.find((e) => e.id === finalEvent.id)
-      if (exists) return prev.map((e) => (e.id === finalEvent.id ? finalEvent : e))
-      return [...prev, finalEvent]
-    })
   }
 
   function openNewEvent() {
@@ -114,24 +96,25 @@ export function CalendarClient({ events: initialEvents }: CalendarClientProps) {
     setCreateOpen(true)
   }
 
-  // Sync current visible range with Google
   function handleGoogleSync() {
-    const start = new Date(currentDate)
-    const end = new Date(currentDate)
-    if (view === 'month') {
-      start.setDate(1)
-      end.setMonth(end.getMonth() + 1, 0)
-    } else if (view === 'week') {
-      start.setDate(start.getDate() - start.getDay())
-      end.setDate(start.getDate() + 6)
-    }
-    google.syncRange(start, end).catch(console.error)
+    startSyncTransition(async () => {
+      const result = await syncAppointmentsWithGoogle()
+
+      if ('error' in result) {
+        window.alert(result.error)
+        return
+      }
+
+      router.refresh()
+      window.alert(
+        `Sincronizacao concluida. ${result.syncedCount} compromisso(s) enviados, ${result.cancelledCount} cancelamento(s) refletidos e ${result.skippedCount} item(ns) sem alteracoes.`
+      )
+    })
   }
 
-  // Filter
   const filteredEvents = useMemo(() => {
     if (typeFilter === 'all') return events
-    return events.filter((e) => e.type === typeFilter)
+    return events.filter((event) => event.type === typeFilter)
   }, [events, typeFilter])
 
   return (
@@ -148,26 +131,27 @@ export function CalendarClient({ events: initialEvents }: CalendarClientProps) {
         onNewEvent={openNewEvent}
       />
 
-      {/* Google Calendar sync bar */}
       <div
         className={cn(
           'flex items-center gap-2 border-b border-border px-4 py-2 text-xs',
-          google.isConnected ? 'bg-green-50 dark:bg-green-950/20' : 'bg-muted/40',
+          googleIntegration.connected ? 'bg-green-50 dark:bg-green-950/20' : 'bg-muted/40',
         )}
       >
-        {google.isConnected ? (
+        {googleIntegration.connected ? (
           <>
             <Wifi className="size-3.5 text-green-600" />
             <span className="text-green-700 dark:text-green-400">
               Google Calendar conectado
             </span>
-            {google.lastSyncedAt && (
+            {(googleIntegration.calendarSummary || googleIntegration.accountEmail) && (
               <span className="text-muted-foreground">
-                · sincronizado{' '}
-                {new Date(google.lastSyncedAt).toLocaleTimeString('pt-BR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
+                {' - '}sincronizado{' '}
+                {google.lastSyncedAt
+                  ? new Date(google.lastSyncedAt).toLocaleTimeString('pt-BR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : 'agora'}
               </span>
             )}
             <div className="ml-auto flex items-center gap-1">
@@ -181,7 +165,7 @@ export function CalendarClient({ events: initialEvents }: CalendarClientProps) {
                 <RefreshCw
                   className={cn('size-3', google.syncStatus === 'syncing' && 'animate-spin')}
                 />
-                {google.syncStatus === 'syncing' ? 'Sincronizando…' : 'Sincronizar'}
+                {google.syncStatus === 'syncing' ? 'Sincronizando...' : 'Sincronizar'}
               </Button>
               <Button
                 variant="ghost"
@@ -197,15 +181,13 @@ export function CalendarClient({ events: initialEvents }: CalendarClientProps) {
         ) : (
           <>
             <Unplug className="size-3.5 text-muted-foreground" />
-            <span className="text-muted-foreground">Google Calendar não conectado</span>
+            <span className="text-muted-foreground">Google Calendar nao conectado</span>
             <Button
               variant="outline"
               size="sm"
               className="ml-auto h-6 px-2 text-xs"
               onClick={() => {
-                // TODO (Fase 3): iniciar OAuth flow
-                // Exemplo: router.push('/api/auth/google/calendar')
-                alert('Integração Google Calendar disponível na Fase 3.\nConfigurar em: Settings → Integrações → Google Calendar')
+                window.location.href = '/api/integrations/google/start'
               }}
             >
               Conectar Google Calendar
@@ -222,23 +204,27 @@ export function CalendarClient({ events: initialEvents }: CalendarClientProps) {
         onDayClick={handleDayClick}
       />
 
-      <EventDetailModal
+      <EventDetailModalReal
         event={selectedEvent}
         open={detailOpen}
         onClose={() => setDetailOpen(false)}
         onEdit={handleEdit}
-        onMarkCompleted={handleMarkCompleted}
-        onCancel={handleCancelEvent}
+        onEventUpdated={(updatedEvent) => {
+          handleEventSaved(updatedEvent)
+          setSelectedEvent(updatedEvent)
+        }}
       />
 
-      <EventCreateModal
+      <EventCreateModalReal
+        key={`${createOpen ? 'open' : 'closed'}:${editEvent?.id ?? 'new'}`}
         open={createOpen}
         editEvent={editEvent}
+        formOptions={formOptions}
         onClose={() => {
           setCreateOpen(false)
           setEditEvent(null)
         }}
-        onSave={handleSaveEvent}
+        onSaved={handleEventSaved}
       />
     </div>
   )

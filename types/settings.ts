@@ -90,7 +90,7 @@ export interface AgentSettings {
 
 export type IntegrationType = 'whatsapp' | 'google_calendar' | 'escavador' | 'advbox'
 
-export type IntegrationStatus = 'connected' | 'disconnected' | 'coming_soon'
+export type IntegrationStatus = 'connected' | 'disconnected' | 'coming_soon' | 'error'
 
 export interface Integration {
   id: string
@@ -101,6 +101,8 @@ export interface Integration {
   connected: boolean          // whether credentials are set up
   enabled: boolean            // whether it's actively being used
   lastSyncAt?: string         // mock: relative string "há 3 horas"
+  connectionDetails?: string  // ex: "primary · contato@escritorio.com"
+  errorMessage?: string
   primaryAction: string       // label for the main CTA button
   logoIcon: string            // name of lucide icon or custom identifier
 }

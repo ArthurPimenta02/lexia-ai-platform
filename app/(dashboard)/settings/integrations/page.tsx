@@ -1,7 +1,47 @@
+import { getSettingsIntegrations } from '@/actions/google-calendar'
 import { IntegrationsClient } from '@/components/settings/IntegrationsClient'
-import { MOCK_INTEGRATIONS } from '@/lib/mock/settings'
 
-export default function SettingsIntegrationsPage() {
+interface SettingsIntegrationsPageProps {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
+}
+
+function getBannerMessage(status?: string, reason?: string) {
+  if (status === 'connected') {
+    return {
+      tone: 'success',
+      text: 'Google Calendar conectado com sucesso.',
+    } as const
+  }
+
+  if (status === 'forbidden') {
+    return {
+      tone: 'error',
+      text: 'Apenas admin ou manager podem gerenciar a integração com Google Calendar.',
+    } as const
+  }
+
+  if (status === 'error') {
+    return {
+      tone: 'error',
+      text: `Falha ao conectar Google Calendar${reason ? `: ${reason}` : '.'}`,
+    } as const
+  }
+
+  return null
+}
+
+export default async function SettingsIntegrationsPage({
+  searchParams,
+}: SettingsIntegrationsPageProps) {
+  const [integrations, rawParams] = await Promise.all([
+    getSettingsIntegrations(),
+    searchParams ?? Promise.resolve({}),
+  ])
+  const params = rawParams as Record<string, string | string[] | undefined>
+
+  const googleStatus = typeof params.google === 'string' ? params.google : undefined
+  const reason = typeof params.reason === 'string' ? params.reason : undefined
+  const banner = getBannerMessage(googleStatus, reason)
   return (
     <div className="max-w-2xl">
       <div className="border-b border-border px-6 py-5">
@@ -11,7 +51,18 @@ export default function SettingsIntegrationsPage() {
         </p>
       </div>
       <div className="p-6">
-        <IntegrationsClient initial={MOCK_INTEGRATIONS} />
+        {banner ? (
+          <div
+            className={
+              banner.tone === 'success'
+                ? 'mb-4 rounded-lg border border-emerald-300/60 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300'
+                : 'mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive'
+            }
+          >
+            {banner.text}
+          </div>
+        ) : null}
+        <IntegrationsClient initial={integrations} />
       </div>
     </div>
   )
