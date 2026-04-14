@@ -1,3 +1,14 @@
+# Status Update - 2026-04-13
+
+- [x] M14 Calendar Backend concluido.
+- [x] Integracao Google Calendar fase 1 concluida nesta entrega.
+  OAuth inicial, persistencia segura em `integrations` + `integration_secrets`, sync Lexia -> Google em create/update/cancel e sync manual pelo modulo Calendar.
+- [x] Validacao da feature: `npx tsc --noEmit`, `eslint` direcionado aos arquivos da feature e `next build` em workspace isolado.
+- [ ] M15 Settings & Users Backend continua como proximo grande bloco ainda nao consolidado.
+- [ ] Lint global do repositorio ainda possui erros preexistentes fora do escopo desta entrega.
+
+---
+
 # Lexia AI — Plano de Execução
 
 > **Estratégia:** Interface primeiro com dados mock → Backend real → Integração n8n → Deploy

@@ -348,6 +348,15 @@ export interface IntegrationRow {
   updated_at: string
 }
 
+export interface IntegrationSecretRow {
+  id: string
+  tenant_id: string
+  integration_type: IntegrationType
+  encrypted_payload: string
+  created_at: string
+  updated_at: string
+}
+
 export interface NotificationRow {
   id: string
   tenant_id: string
@@ -428,6 +437,7 @@ export interface Database {
       radar_items:         TableDef<RadarItemRow>
       appointments:        TableDef<AppointmentRow>
       integrations:        TableDef<IntegrationRow>
+      integration_secrets: TableDef<IntegrationSecretRow>
       notifications:       TableDef<NotificationRow>
       agent_logs:          TableDef<AgentLogRow>
       user_invites:        TableDef<UserInviteRow>
