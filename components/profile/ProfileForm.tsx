@@ -10,11 +10,17 @@ import { Label } from '@/components/ui/label'
 import { ROLE_LABELS } from '@/types/user'
 import type { UserRole } from '@/types/user'
 import { updateCurrentUserProfile, uploadCurrentUserAvatar, type UserProfileData } from '@/actions/profile'
+import { removeCurrentUserOab, saveCurrentUserPrimaryOab } from '@/actions/lawyer-oabs'
 import { requestOabDiscovery } from '@/actions/processos'
 
 interface ProfileFormProps {
   initial: UserProfileData
 }
+
+const BR_STATES = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
+  'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+]
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -26,11 +32,19 @@ function getInitials(name: string) {
 export function ProfileForm({ initial }: ProfileFormProps) {
   const [name, setName] = useState(initial.name)
   const [avatarUrl, setAvatarUrl] = useState(initial.avatarUrl)
+  const [primaryOab, setPrimaryOab] = useState(initial.primaryOab ?? null)
+  const [oabNumber, setOabNumber] = useState(initial.primaryOab?.oabNumber ?? '')
+  const [oabState, setOabState] = useState(initial.primaryOab?.oabState ?? 'SP')
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [syncMessage, setSyncMessage] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isSyncingOab, startOabSyncTransition] = useTransition()
+  const [isSavingOab, startSaveOabTransition] = useTransition()
+  const [isRemovingOab, startRemoveOabTransition] = useTransition()
+
+  const canManageOwnOab = initial.role === 'lawyer' || initial.role === 'admin' || initial.role === 'manager'
+  const shouldShowOabSetup = canManageOwnOab && !primaryOab
 
   function formatDateTime(iso: string | null | undefined) {
     if (!iso) return 'Nunca sincronizada'
@@ -85,12 +99,12 @@ export function ProfileForm({ initial }: ProfileFormProps) {
   }
 
   function handleSyncOab() {
-    if (!initial.primaryOab) return
+    if (!primaryOab) return
 
     setSyncMessage(null)
     setError(null)
     startOabSyncTransition(async () => {
-      const result = await requestOabDiscovery(initial.primaryOab!.id)
+      const result = await requestOabDiscovery(primaryOab.id)
       if ('error' in result) {
         setError(result.error)
         return
@@ -98,6 +112,63 @@ export function ProfileForm({ initial }: ProfileFormProps) {
 
       setSyncMessage('Solicitacao de atualizacao enviada para o n8n.')
       setTimeout(() => setSyncMessage(null), 4000)
+    })
+  }
+
+  function handleSaveOab(searchNow: boolean) {
+    setSyncMessage(null)
+    setError(null)
+
+    startSaveOabTransition(async () => {
+      const result = await saveCurrentUserPrimaryOab({
+        oabNumber,
+        oabState,
+        searchNow,
+      })
+
+      if ('error' in result) {
+        setError(result.error)
+        return
+      }
+
+      setPrimaryOab((prev) => ({
+        id: result.oabId,
+        oabNumber,
+        oabState,
+        discoveryDone: prev?.discoveryDone ?? false,
+        discoveryAt: prev?.discoveryAt ?? null,
+        discoveryCount: prev?.discoveryCount ?? 0,
+      }))
+
+      if (result.discoveryRequested) {
+        setSyncMessage('OAB salva e busca inicial enviada para o n8n.')
+      } else if (result.discoveryError) {
+        setSyncMessage('OAB salva, mas a busca inicial nao pode ser iniciada agora. Voce pode tentar novamente abaixo.')
+      } else {
+        setSyncMessage('OAB salva com sucesso.')
+      }
+    })
+  }
+
+  function handleRemoveOab() {
+    if (!primaryOab) return
+    const confirmed = window.confirm('Deseja remover esta OAB do seu perfil?')
+    if (!confirmed) return
+
+    setSyncMessage(null)
+    setError(null)
+
+    startRemoveOabTransition(async () => {
+      const result = await removeCurrentUserOab(primaryOab.id)
+      if ('error' in result) {
+        setError(result.error)
+        return
+      }
+
+      setPrimaryOab(null)
+      setOabNumber('')
+      setOabState('SP')
+      setSyncMessage('OAB removida com sucesso.')
     })
   }
 
@@ -167,28 +238,29 @@ export function ProfileForm({ initial }: ProfileFormProps) {
         </CardContent>
       </Card>
 
-      <Card>
+      {canManageOwnOab && (
+      <Card id="oab-setup">
         <CardHeader>
-          <CardTitle>Sincronizacao juridica</CardTitle>
+          <CardTitle>Minha OAB</CardTitle>
           <CardDescription>
-            Use sua OAB primaria para disparar a descoberta de processos ativos no Escavador.
+            Cadastre ou edite sua OAB principal para importar seus processos reutilizando o fluxo juridico ja existente da Lexia.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {initial.primaryOab ? (
+          {primaryOab ? (
             <div className="space-y-4">
               <div className="rounded-xl border border-border bg-muted/20 p-4">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-sm font-medium text-foreground">
                       <Scale className="h-4 w-4 text-muted-foreground" />
-                      OAB {initial.primaryOab.oabNumber}/{initial.primaryOab.oabState}
+                      OAB {primaryOab.oabNumber}/{primaryOab.oabState}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Ultima discovery: {formatDateTime(initial.primaryOab.discoveryAt)}
+                      Ultima discovery: {formatDateTime(primaryOab.discoveryAt)}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Processos descobertos na ultima carga: {initial.primaryOab.discoveryCount}
+                      Processos descobertos na ultima carga: {primaryOab.discoveryCount}
                     </p>
                   </div>
 
@@ -203,6 +275,44 @@ export function ProfileForm({ initial }: ProfileFormProps) {
                     {isSyncingOab ? 'Solicitando...' : 'Atualizar processos da OAB'}
                   </Button>
                 </div>
+              </div>
+
+              <div className="grid gap-4 rounded-xl border border-border bg-background p-4 sm:grid-cols-[1fr_120px]">
+                <div className="space-y-1.5">
+                  <Label htmlFor="profile-oab-number">Numero da OAB</Label>
+                  <Input
+                    id="profile-oab-number"
+                    value={oabNumber}
+                    onChange={(e) => setOabNumber(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Ex: 123456"
+                    maxLength={7}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="profile-oab-state">UF</Label>
+                  <select
+                    id="profile-oab-state"
+                    value={oabState}
+                    onChange={(e) => setOabState(e.target.value)}
+                    className="h-10 rounded-md border border-input bg-background text-foreground px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    {BR_STATES.map((state) => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="outline" onClick={() => handleSaveOab(false)} disabled={isSavingOab || isRemovingOab}>
+                  {isSavingOab ? 'Salvando...' : 'Salvar OAB'}
+                </Button>
+                <Button type="button" onClick={() => handleSaveOab(true)} disabled={isSavingOab || isRemovingOab}>
+                  {isSavingOab ? 'Salvando...' : 'Salvar e buscar meus processos agora'}
+                </Button>
+                <Button type="button" variant="destructive" onClick={handleRemoveOab} disabled={isSavingOab || isRemovingOab}>
+                  {isRemovingOab ? 'Removendo...' : 'Remover OAB'}
+                </Button>
               </div>
 
               <div className="rounded-xl border border-border">
@@ -243,6 +353,52 @@ export function ProfileForm({ initial }: ProfileFormProps) {
                 )}
               </div>
             </div>
+          ) : shouldShowOabSetup ? (
+            <div className="space-y-4">
+              <div className="rounded-xl border border-amber-300/60 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+                <p className="font-semibold text-amber-950 dark:text-amber-100">
+                  Antes de continuar, cadastre sua OAB
+                </p>
+                <p className="mt-1">
+                  Isso permite importar seus processos e iniciar a camada juridica operacional da Lexia para o seu usuario.
+                </p>
+              </div>
+
+              <div className="grid gap-4 rounded-xl border border-border bg-background p-4 sm:grid-cols-[1fr_120px]">
+                <div className="space-y-1.5">
+                  <Label htmlFor="profile-oab-number-empty">Numero da OAB</Label>
+                  <Input
+                    id="profile-oab-number-empty"
+                    value={oabNumber}
+                    onChange={(e) => setOabNumber(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Ex: 123456"
+                    maxLength={7}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="profile-oab-state-empty">UF</Label>
+                  <select
+                    id="profile-oab-state-empty"
+                    value={oabState}
+                    onChange={(e) => setOabState(e.target.value)}
+                    className="h-10 rounded-md border border-input bg-background text-foreground px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  >
+                    {BR_STATES.map((state) => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="outline" onClick={() => handleSaveOab(false)} disabled={isSavingOab || isRemovingOab}>
+                  {isSavingOab ? 'Salvando...' : 'Cadastrar minha OAB'}
+                </Button>
+                <Button type="button" onClick={() => handleSaveOab(true)} disabled={isSavingOab || isRemovingOab}>
+                  {isSavingOab ? 'Salvando...' : 'Buscar meus processos agora'}
+                </Button>
+              </div>
+            </div>
           ) : (
             <p className="rounded-lg border border-dashed border-border px-3 py-3 text-sm text-muted-foreground">
               Nenhuma OAB primaria cadastrada para este usuario.
@@ -250,6 +406,7 @@ export function ProfileForm({ initial }: ProfileFormProps) {
           )}
         </CardContent>
       </Card>
+      )}
 
       <div className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-4 py-3">
         {error ? (

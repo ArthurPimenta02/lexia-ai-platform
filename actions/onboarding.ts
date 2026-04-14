@@ -1,7 +1,7 @@
 'use server'
 
-import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { saveCurrentUserPrimaryOab } from '@/actions/lawyer-oabs'
 
 // ── Salvar dados do escritório + OABs no onboarding ───────────────────────────
 // Chamado ao final do wizard de onboarding.
@@ -12,7 +12,9 @@ export async function completeOnboarding(formData: FormData) {
 
   // Sessão obrigatória
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) {
+    return { error: 'Sessao invalida. Faca login novamente.' }
+  }
 
   // tenant_id vem do JWT — nunca do input do usuário
   const tenantId = user.user_metadata?.tenant_id as string | undefined
@@ -26,14 +28,9 @@ export async function completeOnboarding(formData: FormData) {
   const primaryPracticeArea = formData.get('primaryPracticeArea') as string
   const timezone           = (formData.get('timezone') as string) || 'America/Sao_Paulo'
 
-  // OABs: campo "oabs" é JSON array de { oab_number, oab_state }
-  let oabs: { oab_number: string; oab_state: string }[] = []
-  try {
-    const raw = formData.get('oabs') as string
-    if (raw) oabs = JSON.parse(raw)
-  } catch {
-    // campo ausente ou inválido — onboarding continua sem OABs
-  }
+  const oabNumber = (formData.get('oabNumber') as string | null)?.trim() ?? ''
+  const oabState = (formData.get('oabState') as string | null)?.trim() ?? ''
+  const searchNow = formData.get('searchNow') === 'true'
 
   // 1. Atualiza o tenant
   const { error: tenantError } = await supabase
@@ -53,33 +50,32 @@ export async function completeOnboarding(formData: FormData) {
     return { error: 'Erro ao salvar dados do escritório. Tente novamente.' }
   }
 
-  // 2. Insere OABs (upsert — duplicata por oab_number + oab_state é ignorada)
-  if (oabs.length > 0) {
-    const userId = user.id
+  let oabSaved = false
+  let discoveryRequested = false
+  let discoveryError: string | undefined
 
-    const rows = oabs
-      .filter((o) => o.oab_number?.trim() && o.oab_state?.trim())
-      .map((o, i) => ({
-        tenant_id:  tenantId,
-        user_id:    userId,
-        oab_number: o.oab_number.trim(),
-        oab_state:  o.oab_state.trim().toUpperCase(),
-        is_primary: i === 0,      // primeira OAB informada é a principal
-      }))
+  if (oabNumber) {
+    const oabResult = await saveCurrentUserPrimaryOab({
+      oabNumber,
+      oabState,
+      searchNow,
+    })
 
-    if (rows.length > 0) {
-      const { error: oabError } = await supabase
-        .from('lawyer_oabs')
-        .upsert(rows, { onConflict: 'tenant_id,oab_number,oab_state', ignoreDuplicates: true })
-
-      if (oabError) {
-        // Não bloqueia o onboarding — OABs podem ser adicionadas depois em Settings
-        console.error('completeOnboarding: falha ao inserir OABs', oabError)
-      }
+    if ('error' in oabResult) {
+      return { error: oabResult.error }
     }
+
+    oabSaved = true
+    discoveryRequested = oabResult.discoveryRequested
+    discoveryError = oabResult.discoveryError
   }
 
-  redirect('/dashboard')
+  return {
+    success: true,
+    oabSaved,
+    discoveryRequested,
+    discoveryError,
+  }
 }
 
 // ── Buscar dados do tenant atual (para pré-preencher o wizard) ─────────────────

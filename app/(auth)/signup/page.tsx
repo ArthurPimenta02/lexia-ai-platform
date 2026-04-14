@@ -14,12 +14,17 @@ interface FormErrors {
   email?: string
   officeName?: string
   officeCode?: string
+  oab?: string
   password?: string
   confirmPassword?: string
   server?: string
 }
 
 type SignupMode = 'create_office' | 'join_office'
+const BR_STATES = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
+  'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+]
 
 function validate(
   mode: SignupMode,
@@ -27,6 +32,8 @@ function validate(
   email: string,
   officeName: string,
   officeCode: string,
+  isLawyer: boolean,
+  oabNumber: string,
   password: string,
   confirmPassword: string
 ): FormErrors {
@@ -36,6 +43,9 @@ function validate(
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Informe um e-mail valido.'
   if (mode === 'create_office' && !officeName.trim()) errors.officeName = 'Nome do escritorio e obrigatorio.'
   if (mode === 'join_office' && !officeCode.trim()) errors.officeCode = 'Codigo do escritorio e obrigatorio.'
+  if (mode === 'create_office' && isLawyer && !/^\d{3,7}$/.test(oabNumber.trim())) {
+    errors.oab = 'Informe um numero de OAB valido (apenas digitos, 3 a 7 caracteres).'
+  }
   if (!password) errors.password = 'Senha e obrigatoria.'
   else if (password.length < 8) errors.password = 'Minimo de 8 caracteres.'
   if (!confirmPassword) errors.confirmPassword = 'Confirme sua senha.'
@@ -49,6 +59,9 @@ export default function SignupPage() {
   const [email, setEmail] = useState('')
   const [officeName, setOfficeName] = useState('')
   const [officeCode, setOfficeCode] = useState('')
+  const [isLawyer, setIsLawyer] = useState(false)
+  const [oabNumber, setOabNumber] = useState('')
+  const [oabState, setOabState] = useState('SP')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -62,7 +75,7 @@ export default function SignupPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const errs = validate(signupMode, name, email, officeName, officeCode, password, confirmPassword)
+    const errs = validate(signupMode, name, email, officeName, officeCode, isLawyer, oabNumber, password, confirmPassword)
     setErrors(errs)
     if (Object.keys(errs).length > 0) return
 
@@ -75,6 +88,11 @@ export default function SignupPage() {
 
     if (signupMode === 'create_office') {
       formData.set('officeName', officeName)
+      formData.set('isLawyer', String(isLawyer))
+      if (isLawyer) {
+        formData.set('oabNumber', oabNumber.trim())
+        formData.set('oabState', oabState)
+      }
     } else {
       formData.set('officeCode', officeCode.toUpperCase())
     }
@@ -109,6 +127,7 @@ export default function SignupPage() {
             onClick={() => {
               setSignupMode('join_office')
               clearError('officeName')
+              clearError('oab')
             }}
             className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
               signupMode === 'join_office'
@@ -163,28 +182,92 @@ export default function SignupPage() {
         </div>
 
         {signupMode === 'create_office' ? (
-          <div className="space-y-1.5">
-            <Label htmlFor="officeName">Nome do escritorio</Label>
-            <Input
-              id="officeName"
-              type="text"
-              placeholder="Silva & Associados"
-              autoComplete="organization"
-              value={officeName}
-              aria-invalid={!!errors.officeName}
-              onChange={(e) => {
-                setOfficeName(e.target.value)
-                clearError('officeName')
-              }}
-              disabled={loading}
-            />
-            {errors.officeName ? (
-              <p className="text-xs text-error">{errors.officeName}</p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                O codigo do escritorio sera gerado automaticamente apos o cadastro.
-              </p>
-            )}
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="officeName">Nome do escritorio</Label>
+              <Input
+                id="officeName"
+                type="text"
+                placeholder="Silva & Associados"
+                autoComplete="organization"
+                value={officeName}
+                aria-invalid={!!errors.officeName}
+                onChange={(e) => {
+                  setOfficeName(e.target.value)
+                  clearError('officeName')
+                }}
+                disabled={loading}
+              />
+              {errors.officeName ? (
+                <p className="text-xs text-error">{errors.officeName}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  O codigo do escritorio sera gerado automaticamente apos o cadastro.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={isLawyer}
+                  onChange={(e) => {
+                    setIsLawyer(e.target.checked)
+                    if (!e.target.checked) {
+                      setOabNumber('')
+                      setOabState('SP')
+                      clearError('oab')
+                    }
+                  }}
+                  disabled={loading}
+                  className="mt-1 h-4 w-4 rounded border-input"
+                />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-foreground">Sou advogado e quero informar minha OAB agora</p>
+                  <p className="text-xs text-muted-foreground">
+                    Se voce for o advogado responsavel pelo escritorio, a Lexia pode salvar sua OAB ja no cadastro.
+                  </p>
+                </div>
+              </label>
+
+              {isLawyer ? (
+                <div className="grid gap-3 sm:grid-cols-[1fr_110px]">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="signup-oab-number">Numero da OAB</Label>
+                    <Input
+                      id="signup-oab-number"
+                      type="text"
+                      placeholder="Ex: 123456"
+                      value={oabNumber}
+                      aria-invalid={!!errors.oab}
+                      onChange={(e) => {
+                        setOabNumber(e.target.value.replace(/\D/g, ''))
+                        clearError('oab')
+                      }}
+                      disabled={loading}
+                      maxLength={7}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="signup-oab-state">UF</Label>
+                    <select
+                      id="signup-oab-state"
+                      value={oabState}
+                      onChange={(e) => setOabState(e.target.value)}
+                      disabled={loading}
+                      className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50"
+                    >
+                      {BR_STATES.map((state) => (
+                        <option key={state} value={state}>{state}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ) : null}
+
+              {errors.oab ? <p className="text-xs text-error">{errors.oab}</p> : null}
+            </div>
           </div>
         ) : (
           <div className="space-y-1.5">
