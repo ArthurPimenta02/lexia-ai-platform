@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { canWrite } from '@/lib/permissions'
+import { canWrite, hasRole } from '@/lib/permissions'
 import type { UserRole } from '@/types/database'
 
 export interface ImportedProcessItem {
@@ -233,4 +233,61 @@ export async function createCasoFromImportedProcess(
   revalidatePath('/profile')
 
   return { success: true, casoId: row.caso_id }
+}
+
+export async function deleteImportedProcess(
+  processoId: string
+): Promise<{ success: true } | { error: string }> {
+  const context = await getContext()
+  if ('error' in context) return { error: context.error }
+
+  if (!hasRole(context.role, 'lawyer')) {
+    return { error: 'Voce nao tem permissao para excluir processos.' }
+  }
+
+  const supabase = await createClient()
+  const { data: process, error: processError } = await supabase
+    .from('processos')
+    .select('id')
+    .eq('tenant_id', context.tenantId)
+    .eq('id', processoId)
+    .not('discovered_via_oab_id', 'is', null)
+    .maybeSingle()
+
+  if (processError || !process) {
+    return { error: 'Processo importado nao encontrado para o tenant autenticado.' }
+  }
+
+  const { data: existingLink, error: linkError } = await supabase
+    .from('case_process_links')
+    .select('caso_id')
+    .eq('tenant_id', context.tenantId)
+    .eq('processo_id', processoId)
+    .limit(1)
+    .maybeSingle()
+
+  if (linkError) {
+    return { error: 'Nao foi possivel validar se o processo ja esta vinculado a um caso.' }
+  }
+
+  if (existingLink?.caso_id) {
+    return { error: 'Este processo ja esta vinculado a um caso e nao pode ser excluido por esta tela.' }
+  }
+
+  const { error } = await supabase
+    .from('processos')
+    .delete()
+    .eq('id', processoId)
+    .eq('tenant_id', context.tenantId)
+
+  if (error) {
+    console.error('[deleteImportedProcess]', error)
+    return { error: 'Erro ao excluir processo.' }
+  }
+
+  revalidatePath('/processos')
+  revalidatePath('/profile')
+  revalidatePath('/casos')
+
+  return { success: true }
 }
